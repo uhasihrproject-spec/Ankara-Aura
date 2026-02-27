@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useReducer, useEffect } from "react";
+import { createContext, useContext, useReducer, useEffect, useState } from "react";
 
 type CartItem = {
   slug: string;
@@ -10,6 +10,13 @@ type CartItem = {
   qty: number;
   color?: string;
   variant?: string;
+};
+
+type WishlistItem = {
+  slug: string;
+  name: string;
+  price: number;
+  image?: string;
 };
 
 type CartAction =
@@ -27,6 +34,10 @@ type CartContextValue = {
   clearCart: () => void;
   totalQty: number;
   totalPrice: number;
+  wishlist: WishlistItem[];
+  addToWishlist: (item: WishlistItem) => void;
+  removeFromWishlist: (slug: string) => void;
+  wishlistCount: number;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -34,9 +45,7 @@ const CartContext = createContext<CartContextValue | null>(null);
 function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
   switch (action.type) {
     case "ADD": {
-      const existing = state.find(
-        (i) => i.slug === action.item.slug && i.size === action.item.size,
-      );
+      const existing = state.find((i) => i.slug === action.item.slug && i.size === action.item.size);
       if (existing) {
         return state.map((i) =>
           i.slug === action.item.slug && i.size === action.item.size
@@ -50,9 +59,7 @@ function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
       return state.filter((i) => !(i.slug === action.slug && i.size === action.size));
     case "UPDATE_QTY":
       return state.map((i) =>
-        i.slug === action.slug && i.size === action.size
-          ? { ...i, qty: Math.max(1, action.qty) }
-          : i,
+        i.slug === action.slug && i.size === action.size ? { ...i, qty: Math.max(1, action.qty) } : i,
       );
     case "CLEAR":
       return [];
@@ -65,6 +72,15 @@ function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, dispatch] = useReducer(cartReducer, [] as CartItem[]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const savedWish = localStorage.getItem("aa_wishlist");
+      return savedWish ? (JSON.parse(savedWish) as WishlistItem[]) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     try {
@@ -79,16 +95,39 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("aa_cart", JSON.stringify(items));
   }, [items]);
 
+  useEffect(() => {
+    localStorage.setItem("aa_wishlist", JSON.stringify(wishlist));
+  }, [wishlist]);
+
   const addToCart: CartContextValue["addToCart"] = (item) => dispatch({ type: "ADD", item });
   const removeItem = (slug: string, size: string) => dispatch({ type: "REMOVE", slug, size });
   const updateQty = (slug: string, size: string, qty: number) => dispatch({ type: "UPDATE_QTY", slug, size, qty });
   const clearCart = () => dispatch({ type: "CLEAR" });
 
+  const addToWishlist = (item: WishlistItem) => {
+    setWishlist((prev) => (prev.some((i) => i.slug === item.slug) ? prev : [...prev, item]));
+  };
+  const removeFromWishlist = (slug: string) => setWishlist((prev) => prev.filter((i) => i.slug !== slug));
+
   const totalQty = items.reduce((s, i) => s + i.qty, 0);
   const totalPrice = items.reduce((s, i) => s + i.price * i.qty, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeItem, updateQty, clearCart, totalQty, totalPrice }}>
+    <CartContext.Provider
+      value={{
+        items,
+        addToCart,
+        removeItem,
+        updateQty,
+        clearCart,
+        totalQty,
+        totalPrice,
+        wishlist,
+        addToWishlist,
+        removeFromWishlist,
+        wishlistCount: wishlist.length,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
