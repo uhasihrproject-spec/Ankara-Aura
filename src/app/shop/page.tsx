@@ -328,23 +328,18 @@ export default function ShopPage() {
         }
         .hero-info-right { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
         .hero-cta {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 14px; letter-spacing: 0.22em;
+          font-size: 11px; letter-spacing: 0.16em;
           text-transform: uppercase;
           background: var(--ink); color: var(--cream);
-          padding: 14px 36px; text-decoration: none;
+          padding: 9px 20px; text-decoration: none;
           border: 1px solid var(--ink); cursor: pointer;
-          position: relative; overflow: hidden;
-          transition: transform 0.2s, box-shadow 0.2s;
+          transition: background 0.2s, color 0.2s, transform 0.18s;
+          font-family: 'DM Sans', sans-serif;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
-        .hero-cta::before {
-          content: ''; position: absolute; inset: 0;
-          background: var(--gold);
-          transform: scaleX(0); transform-origin: left;
-          transition: transform 0.35s cubic-bezier(0.77,0,0.175,1);
-        }
-        .hero-cta:hover::before { transform: scaleX(1); }
-        .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(200,80,42,0.35); }
+        .hero-cta:hover { background: transparent; color: var(--cream); transform: translateY(-1px); }
         .hero-cta span { position: relative; z-index: 1; }
 
         /* ── arrows ── */
@@ -476,19 +471,19 @@ export default function ShopPage() {
           position: absolute; top: 16px; right: 16px;
           z-index: 4;
           background: var(--ink); color: var(--cream);
-          border: 1px solid var(--ink); cursor: pointer;
-          font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+          border: 1px solid rgba(247,246,244,0.45); cursor: pointer;
+          font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
           font-family: 'DM Sans', sans-serif;
-          padding: 8px 14px;
+          padding: 9px 14px;
           opacity: 0; transform: translateY(-8px);
-          transition: opacity 0.3s, transform 0.3s;
+          transition: opacity 0.3s, transform 0.3s, background 0.2s, color 0.2s;
           pointer-events: none;
         }
         .product-card:hover .product-card-quick {
           opacity: 1; transform: translateY(0); pointer-events: all;
         }
         .product-card-quick.added {
-          background: var(--gold); color: var(--ink); opacity: 1; transform: translateY(0); pointer-events: all;
+          background: var(--gold); color: var(--ink); border-color: var(--gold); opacity: 1; transform: translateY(0); pointer-events: all;
         }
 
         /* ── added flash ── */

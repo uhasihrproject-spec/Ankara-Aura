@@ -116,29 +116,28 @@ export default function Navbar() {
         font-family: 'DM Sans', sans-serif;
       }
 
-      .nav-kente-strip {
-        height: 0;
-        overflow: hidden;
-        transition: height 0.25s ease;
-        background: repeating-linear-gradient(
-          90deg,
-          var(--kente) 0px, var(--kente) 24px,
-          var(--ink) 24px, var(--ink) 48px,
-          #fff 48px, #fff 72px
-        );
-      }
-      .nav-kente-strip.on { height: 6px; }
 
       .nav {
         background: rgba(247,246,244,0.95);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-bottom: 1px solid var(--border);
-        transition: box-shadow 0.3s, height 0.4s cubic-bezier(0.4,0,0.2,1);
+        transition: box-shadow 0.3s, height 0.35s cubic-bezier(0.4,0,0.2,1), background 0.3s;
         height: var(--nav-h);
         overflow: hidden;
       }
       .nav.scrolled { box-shadow: 0 2px 40px rgba(8,8,7,0.08); }
+      .nav.pattern-mode {
+        height: 10px;
+        background: repeating-linear-gradient(
+          90deg,
+          var(--kente) 0px, var(--kente) 24px,
+          var(--ink) 24px, var(--ink) 48px,
+          #fff 48px, #fff 72px
+        );
+        border-bottom-color: rgba(8,8,7,0.22);
+      }
+      .nav.pattern-mode .nav-inner { opacity: 0; pointer-events: none; }
 
       .nav-inner {
         max-width: 1200px;
@@ -149,6 +148,7 @@ export default function Navbar() {
         align-items: center;
         justify-content: space-between;
         gap: 32px;
+        transition: opacity 0.2s;
       }
 
       /* ════════════ LOGO ════════════ */
@@ -921,9 +921,8 @@ export default function Navbar() {
 
     {/* ── NAV SHELL ── */}
     <div className="nav-shell">
-      <div className={`nav-kente-strip${showKenteStrip ? " on" : ""}`} />
       <header
-        className={`nav${scrolled ? " scrolled" : ""}`}
+        className={`nav${scrolled ? " scrolled" : ""}${showKenteStrip ? " pattern-mode" : ""}`}
       >
         <div className="nav-inner">
 
