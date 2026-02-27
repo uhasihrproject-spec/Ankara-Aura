@@ -3,7 +3,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { useMemo } from "react";
 import AnkaraPatternColor from "@/components/site/AnkaraPatternColor";
 import StrokeText from "@/components/ui/StrokeText";
@@ -119,13 +118,7 @@ export default function CollectionsClient({ featured }: { featured: Product[] })
 
       <div className="relative z-[2] mx-auto max-w-6xl px-4 py-10 md:py-14">
         {/* top row */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="flex items-center gap-4"
-        >
+        <div className="flex items-center gap-4">
           <span className="font-[Caveat] text-[18px] text-black/55">Collections</span>
           <span className="h-px flex-1 bg-black/10" />
           <Link
@@ -134,19 +127,13 @@ export default function CollectionsClient({ featured }: { featured: Product[] })
           >
             See all →
           </Link>
-        </motion.div>
+        </div>
 
         {/* flat block */}
         <div className="mt-6 border border-black/10 bg-white">
           <div className="p-6 sm:p-8 md:p-10">
             {/* ✅ BIG stroke heading that always shows */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="font-[Bebas_Neue] leading-none"
-            >
+            <div className="font-[Bebas_Neue] leading-none">
               <div className="w-full text-[clamp(84px,11vw,170px)] leading-[0.78]">
                 <StrokeText
                   text="COLLECTIONS"
@@ -156,36 +143,20 @@ export default function CollectionsClient({ featured }: { featured: Product[] })
                   letterSpacingEm={0.01}
                 />
               </div>
-            </motion.div>
+            </div>
 
             {/* ✅ responsive animated handwriting text */}
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
-              transition={{
-                duration: 0.8,
-                ease: [0.16, 1, 0.3, 1],
-                delay: 0.05,
-              }}
-              className="mt-3 font-[Caveat] text-[clamp(18px,2.4vw,30px)] text-black/55 leading-[1.55] max-w-[58ch]"
-            >
+            <p className="mt-3 font-[Caveat] text-[clamp(18px,2.4vw,30px)] text-black/55 leading-[1.55] max-w-[58ch]">
               Black &amp; white at the core — Ankara colour, restrained. Tap any image to open the product.
-            </motion.p>
+            </p>
 
             {/* full-width carousel (no sharing space) */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.08 }}
-              className="mt-8"
-            >
+            <div className="mt-8">
               <MarqueeImages items={items} />
               <div className="mt-2 font-[Caveat] text-[16px] text-black/45 sm:hidden">
                 swipe → (auto) | tap any image ✦
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>

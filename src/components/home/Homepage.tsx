@@ -23,11 +23,13 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getFeaturedProducts, COLLECTIONS } from "@/lib/products";
 import type { Product } from "@/lib/products";
+import { useCart } from "@/lib/cart-context";
 
 /* ─── INTERSECTION OBSERVER HOOK ─── */
-function useReveal(threshold = 0.1) {
+function useReveal(threshold = 0.1): [React.RefObject<HTMLElement>, boolean] {
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -45,13 +47,13 @@ function useReveal(threshold = 0.1) {
     obs.observe(el);
     return () => obs.disconnect();
   }, [threshold]);
-  return { ref, visible };
+  return [ref as React.RefObject<HTMLElement>, visible];
 }
 
 /* ─── COUNT-UP ─── */
 function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
   const [val, setVal] = useState(0);
-  const { ref, visible } = useReveal(0.3);
+  const [ref, visible] = useReveal(0.3);
   useEffect(() => {
     if (!visible) return;
     let start = 0;
@@ -107,7 +109,7 @@ function Marquee({
 /* ─── COLLECTIONS SECTION ─── */
 function CollectionsSection() {
   const [active, setActive] = useState(0);
-  const { ref, visible } = useReveal(0.08);
+  const [ref, visible] = useReveal(0.08);
   const count = COLLECTIONS.length;
 
   useEffect(() => {
@@ -151,7 +153,7 @@ function CollectionsSection() {
           <div className="cols-img-wrap">
             {COLLECTIONS.map((col, i) => (
               <div key={col.slug} className={`col-frame${active === i ? " on" : ""}`}>
-                <img src={col.image} alt={col.name} className="col-img" />
+                <Image src={col.image} alt={col.name} className="col-img" width={960} height={960} unoptimized />
                 <div className="col-frame-label">{col.name}</div>
               </div>
             ))}
@@ -172,66 +174,17 @@ function CollectionsSection() {
   );
 }
 
-/* ─── PRODUCT TILE ─── */
-function ProductTile({
-  product,
-  index,
-  layout = "portrait",
-}: {
-  product: Product;
-  index: number;
-  layout?: "portrait" | "landscape";
-}) {
-  const [hovered, setHovered] = useState(false);
-  const img1 = product.images?.[0] ?? "/placeholder.jpg";
-  const img2 = product.images?.[1] ?? img1;
-
-  return (
-    <Link
-      href={`/shop/${product.slug}`}
-      className={`ptile ptile--${layout}`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ transitionDelay: `${index * 0.1}s` }}
-    >
-      <div className="ptile-img-wrap">
-        <img
-          src={img1}
-          alt={product.name}
-          className={`ptile-img ptile-img--a${hovered ? " out" : ""}`}
-        />
-        <img
-          src={img2}
-          alt={product.name}
-          className={`ptile-img ptile-img--b${hovered ? " in" : ""}`}
-        />
-        <div className="ptile-overlay">
-          <span className="ptile-tag">{product.tags[0]}</span>
-          <span className="ptile-cta">
-            View Piece
-            <svg width="20" height="7" viewBox="0 0 20 7" fill="none" aria-hidden>
-              <path d="M0 3.5h18M15 1l3 2.5L15 6" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-            </svg>
-          </span>
-        </div>
-      </div>
-      <div className="ptile-meta">
-        <span className="ptile-name">{product.name}</span>
-        <span className="ptile-price">GH₵ {product.price.toLocaleString()}</span>
-      </div>
-    </Link>
-  );
-}
-
 /* ─── FEATURED TILE (dark, editorial) ─── */
 function FeaturedTile({
   product,
   index,
   variant = "compact",
+  onQuickAdd,
 }: {
   product: Product;
   index: number;
   variant?: "hero" | "compact" | "wide";
+  onQuickAdd?: (product: Product) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const img1 = product.images?.[0] ?? null;
@@ -256,8 +209,8 @@ function FeaturedTile({
       <div className="ptile-img-wrap">
         {img1 ? (
           <>
-            <img src={img1} alt={product.name} className={`ptile-img ptile-img--a${hovered ? " out" : ""}`} />
-            {img2 && <img src={img2} alt={product.name} className={`ptile-img ptile-img--b${hovered ? " in" : ""}`} />}
+            <Image src={img1} alt={product.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" className={`ptile-img ptile-img--a${hovered ? " out" : ""}`} />
+            {img2 && <Image src={img2} alt={product.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" className={`ptile-img ptile-img--b${hovered ? " in" : ""}`} />}
           </>
         ) : (
           <div className="ptile-placeholder">
@@ -275,6 +228,17 @@ function FeaturedTile({
                 <path d="M0 3h16M13 1l3 2-3 2" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
               </svg>
             </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onQuickAdd?.(product);
+              }}
+              className="ptile-cta"
+            >
+              Add to Bag
+            </button>
           </div>
         </div>
       </div>
@@ -286,21 +250,24 @@ function FeaturedTile({
 export default function HomePage() {
   const featured = getFeaturedProducts();
 
-  const statsR    = useReveal(0.2);
-  const quoteR    = useReveal(0.15);
-  const dropR     = useReveal(0.08);
-  const storyR    = useReveal(0.08);
-  const processR  = useReveal(0.1);
-  const quote2R   = useReveal(0.15);
-  const craftR    = useReveal(0.08);
-  const lookR     = useReveal(0.1);
-  const expR      = useReveal(0.08);
-  const pressR    = useReveal(0.1);
-  const testiR    = useReveal(0.15);
-  const newsR     = useReveal(0.12);
+  const [statsRef, statsVisible] = useReveal(0.2);
+  const [quoteRef, quoteVisible] = useReveal(0.15);
+  const [dropRef, dropVisible] = useReveal(0.08);
+  const [storyRef, storyVisible] = useReveal(0.08);
+  const [processRef, processVisible] = useReveal(0.1);
+  const [quote2Ref, quote2Visible] = useReveal(0.15);
+  const [craftRef, craftVisible] = useReveal(0.08);
+  const [lookSectionRef, lookSectionVisible] = useReveal(0.1);
+  const [expRef, expVisible] = useReveal(0.08);
+  const [pressRef, pressVisible] = useReveal(0.1);
+  const [testiRef, testiVisible] = useReveal(0.15);
+  const [newsRef, newsVisible] = useReveal(0.12);
 
   const [email, setEmail]   = useState("");
   const [subbed, setSubbed] = useState(false);
+  const [homeAddedSlug, setHomeAddedSlug] = useState<string | null>(null);
+  const { addToCart } = useCart();
+  const [subLoading, setSubLoading] = useState(false);
   const [testiIdx, setTestiIdx] = useState(0);
 
   const testimonials = [
@@ -317,7 +284,12 @@ export default function HomePage() {
   const handleSub = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (email.trim()) setSubbed(true);
+      if (!email.trim()) return;
+      setSubLoading(true);
+      setTimeout(() => {
+        setSubbed(true);
+        setSubLoading(false);
+      }, 700);
     },
     [email]
   );
@@ -346,6 +318,12 @@ export default function HomePage() {
     el.style.cursor = "grab";
   };
 
+  const handleHomeQuickAdd = (product: Product) => {
+    addToCart({ slug: product.slug, name: product.name, price: product.price, size: "M", qty: 1 });
+    setHomeAddedSlug(product.slug);
+    setTimeout(() => setHomeAddedSlug(null), 1400);
+  };
+
   return (
     <>
       <style>{`
@@ -356,7 +334,7 @@ export default function HomePage() {
         :root {
           --ink:    #0b0b0a;
           --cream:  #f7f6f4;
-          --kente:  #c8502a;
+          --kente:  #d4a843;
           --gold:   #d4a843;
           --indigo: #1a3a5c;
           --forest: #2d6a4f;
@@ -1618,124 +1596,6 @@ export default function HomePage() {
       `}</style>
 
       {/* ══════════════════════════════════════════
-          00 — HERO
-      ══════════════════════════════════════════ */}
-      <section className="hero-s">
-        {/* animated ankara pattern */}
-        <div className="hero-bg-pattern">
-          <svg xmlns="http://www.w3.org/2000/svg" style={{ position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.09 }} aria-hidden>
-            <defs>
-              <pattern id="hp" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
-                <rect x="0.5" y="0.5" width="63" height="63" fill="none" stroke="#000" strokeWidth="0.7"/>
-                <polygon points="32,2 62,32 32,62 2,32" fill="none" stroke="#000" strokeWidth="1"/>
-                <polygon points="0,0 18,0 0,18" fill="#000" opacity="0.1"/>
-                <polygon points="64,0 46,0 64,18" fill="#000" opacity="0.1"/>
-                <polygon points="0,64 18,64 0,46" fill="#000" opacity="0.1"/>
-                <polygon points="64,64 46,64 64,46" fill="#000" opacity="0.1"/>
-                <polygon points="32,18 46,32 32,46 18,32" fill="none" stroke="#c8502a" strokeWidth="0.7" opacity="0.5"/>
-                <circle cx="32" cy="32" r="2.5" fill="#c8502a" opacity="0.22"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#hp)"/>
-          </svg>
-        </div>
-
-        {/* ghost text */}
-        <div className="hero-ghost" style={{ top:"-14px", left:"-8px" }}>ANKARA</div>
-        <div className="hero-ghost" style={{ top:"160px", left:"-8px", animationDelay:"2s" }}>AURA</div>
-
-        {/* eyebrow */}
-        <div className="hero-eyebrow">
-          <span className="hero-eyebrow-text">Ankara Aura</span>
-          <div className="hero-eyebrow-rule"/>
-          <div className="hero-eyebrow-dot"/>
-          <span className="hero-eyebrow-text" style={{color:"var(--kente)"}}>SS 2025</span>
-        </div>
-
-        {/* main grid */}
-        <div className="hero-grid">
-          {/* LEFT */}
-          <div className="hero-left">
-            <div>
-              <div className="hero-headline-wrap">
-                <span className="hero-headline-fill">STREET</span>
-              </div>
-              <div className="hero-headline-wrap">
-                <span className="hero-headline-stroke">LUXURY</span>
-              </div>
-              <span className="hero-sub">where culture meets couture ✦</span>
-            </div>
-
-            <p className="hero-body">
-              Black &amp; white at the core — Ankara colour, restrained. Every piece carries the texture of tradition, crafted for the modern street.
-            </p>
-
-            <div className="hero-cta-row">
-              <Link href="/shop" style={{
-                background:"var(--ink)", color:"var(--cream)",
-                padding:"13px 28px", textDecoration:"none",
-                fontFamily:"var(--fd)", fontSize:"13px", letterSpacing:"0.2em",
-                textTransform:"uppercase", border:"1.5px solid var(--ink)",
-                transition:"background 0.2s, color 0.2s, transform 0.2s",
-                display:"inline-block",
-              }}
-              onMouseEnter={e=>{(e.target as HTMLElement).style.cssText+="background:transparent;color:var(--ink);transform:translateY(-2px)"}}
-              onMouseLeave={e=>{(e.target as HTMLElement).style.cssText+="background:var(--ink);color:var(--cream);transform:none"}}
-              >
-                Shop Now
-              </Link>
-              <Link href="/customize" style={{
-                fontFamily:"var(--fa)", fontSize:"17px",
-                color:"rgba(8,8,7,0.5)", textDecoration:"none",
-                borderBottom:"1px solid rgba(8,8,7,0.2)", paddingBottom:"2px",
-                transition:"color 0.2s, borderColor 0.2s",
-              }}>
-                Customize it →
-              </Link>
-            </div>
-          </div>
-
-          {/* RIGHT */}
-          <div className="hero-right">
-            <div className="hero-label">
-              <p className="hero-label-sub">Street Luxury</p>
-              <p className="hero-label-main">ANKARA<br/>AURA</p>
-            </div>
-            <div className="hero-model-ph">
-              <div style={{textAlign:"center"}}>
-                <div className="hero-ph-big">MODEL<br/>HERE</div>
-                <p className="hero-ph-hw">your image goes here ✦</p>
-              </div>
-            </div>
-            <div className="hero-strip">
-              <div>
-                <p className="hero-strip-name">Ankara Oversized Tee</p>
-                <p className="hero-strip-price">GH₵ 120</p>
-              </div>
-              <Link href="/shop/ankara-oversized-tee" style={{
-                background:"var(--kente)", color:"white",
-                padding:"11px 22px", textDecoration:"none",
-                fontFamily:"var(--fd)", fontSize:"11px", letterSpacing:"0.18em",
-                textTransform:"uppercase",
-              }}>
-                View Piece
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* stats */}
-        <div className="hero-stats">
-          {[["200+","Pieces crafted"],["4.9★","Avg rating"],["48h","Delivery"],["100%","Ankara DNA"]].map(([n,l],i) => (
-            <div key={i} className="hero-stat">
-              <div className="hero-stat-n">{n}</div>
-              <div className="hero-stat-l">{l}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
           01 — TAGLINE STRIP
       ══════════════════════════════════════════ */}
       <div className="strip" aria-hidden="true">
@@ -1759,8 +1619,8 @@ export default function HomePage() {
           02 — STATS BAR
       ══════════════════════════════════════════ */}
       <section
-        ref={statsR.ref as React.RefObject<HTMLElement>}
-        className={`s stats-s${statsR.visible ? " in" : ""}`}
+        ref={statsRef}
+        className={`s stats-s${statsVisible ? " in" : ""}`}
       >
         <div className="page-w">
           <div className="stats-grid">
@@ -1791,8 +1651,8 @@ export default function HomePage() {
           04 — CULTURE QUOTE (dark)
       ══════════════════════════════════════════ */}
       <section
-        ref={quoteR.ref as React.RefObject<HTMLElement>}
-        className={`s quote-s${quoteR.visible ? " in" : ""}`}
+        ref={quoteRef}
+        className={`s quote-s${quoteVisible ? " in" : ""}`}
       >
         <div className="wm wm-quote" aria-hidden>AURA</div>
         <div className="quote-stripes-top" aria-hidden />
@@ -1812,15 +1672,15 @@ export default function HomePage() {
           05 — THE DROP (dark editorial)
       ══════════════════════════════════════════ */}
       <section
-        ref={dropR.ref as React.RefObject<HTMLElement>}
-        className={`s drop-s${dropR.visible ? " in" : ""}`}
+        ref={dropRef}
+        className={`s drop-s${dropVisible ? " in" : ""}`}
       >
         {/* ankara pattern bg */}
         <svg className="drop-pattern" xmlns="http://www.w3.org/2000/svg" aria-hidden>
           <defs>
             <pattern id="dp" width="80" height="80" patternUnits="userSpaceOnUse">
               <polygon points="40,3 77,40 40,77 3,40" fill="none" stroke="#d4a843" strokeWidth="0.8"/>
-              <polygon points="40,20 60,40 40,60 20,40" fill="none" stroke="#c8502a" strokeWidth="0.5"/>
+              <polygon points="40,20 60,40 40,60 20,40" fill="none" stroke="#d4a843" strokeWidth="0.5"/>
               <circle cx="40" cy="40" r="2" fill="#d4a843" opacity="0.6"/>
             </pattern>
           </defs>
@@ -1834,7 +1694,7 @@ export default function HomePage() {
             <span className="drop-headline-stroke">DROP</span>
           </h2>
           <div className="drop-header-right">
-            <span className="drop-season">SS 2025 — Featured Pieces</span>
+            <span className="drop-season">{homeAddedSlug ? "Added to bag ✓" : "SS 2025 — Featured Pieces"}</span>
             <Link href="/shop" className="arrow-link arrow-link--light">
               <span>View All Pieces</span>
               <svg width="28" height="9" viewBox="0 0 28 9" fill="none" aria-hidden>
@@ -1848,18 +1708,18 @@ export default function HomePage() {
         <div className={`drop-grid${featured.length <= 2 ? " two" : ""}`}>
           {/* hero tile — tall left */}
           {featured[0] && (
-            <FeaturedTile product={featured[0]} index={0} variant="hero" />
+            <FeaturedTile product={featured[0]} index={0} variant="hero" onQuickAdd={handleHomeQuickAdd} />
           )}
           {/* right column */}
           <div className="drop-right-col">
             {featured.slice(1, 3).map((p, i) => (
-              <FeaturedTile key={p.slug} product={p} index={i + 1} variant="compact" />
+              <FeaturedTile key={p.slug} product={p} index={i + 1} variant="compact" onQuickAdd={handleHomeQuickAdd} />
             ))}
           </div>
           {/* fourth tile spans full */}
           {featured[3] && (
             <div style={{ gridColumn: featured.length <= 2 ? "auto" : "1 / -1" }}>
-              <FeaturedTile product={featured[3]} index={3} variant="wide" />
+              <FeaturedTile product={featured[3]} index={3} variant="wide" onQuickAdd={handleHomeQuickAdd} />
             </div>
           )}
         </div>
@@ -1880,8 +1740,8 @@ export default function HomePage() {
           06 — BRAND STORY
       ══════════════════════════════════════════ */}
       <section
-        ref={storyR.ref as React.RefObject<HTMLElement>}
-        className={`s story-s${storyR.visible ? " in" : ""}`}
+        ref={storyRef}
+        className={`s story-s${storyVisible ? " in" : ""}`}
       >
         <div className="wm wm-story" aria-hidden>ANKARA</div>
         <div className="page-w">
@@ -1925,8 +1785,8 @@ export default function HomePage() {
           07 — PROCESS STRIP (dark)
       ══════════════════════════════════════════ */}
       <section
-        ref={processR.ref as React.RefObject<HTMLElement>}
-        className={`s process-s${processR.visible ? " in" : ""}`}
+        ref={processRef}
+        className={`s process-s${processVisible ? " in" : ""}`}
       >
         <div className="process-row">
           {[
@@ -1948,8 +1808,8 @@ export default function HomePage() {
           08 — SECOND QUOTE (editorial, light)
       ══════════════════════════════════════════ */}
       <section
-        ref={quote2R.ref as React.RefObject<HTMLElement>}
-        className={`s quote2-s${quote2R.visible ? " in" : ""}`}
+        ref={quote2Ref}
+        className={`s quote2-s${quote2Visible ? " in" : ""}`}
       >
         <div className="wm wm-q2" aria-hidden>WORN</div>
         <div className="quote2-inner">
@@ -1969,8 +1829,8 @@ export default function HomePage() {
           09 — CRAFTSMANSHIP
       ══════════════════════════════════════════ */}
       <section
-        ref={craftR.ref as React.RefObject<HTMLElement>}
-        className={`s craft-s${craftR.visible ? " in" : ""}`}
+        ref={craftRef}
+        className={`s craft-s${craftVisible ? " in" : ""}`}
       >
         <div className="wm wm-craft" aria-hidden>CRAFT</div>
         <div className="page-w">
@@ -2007,8 +1867,8 @@ export default function HomePage() {
           10 — LOOKBOOK PREVIEW
       ══════════════════════════════════════════ */}
       <section
-        ref={lookR.ref as React.RefObject<HTMLElement>}
-        className={`s look-s${lookR.visible ? " in" : ""}`}
+        ref={lookSectionRef}
+        className={`s look-s${lookSectionVisible ? " in" : ""}`}
       >
         <div className="look-head">
           <div>
@@ -2028,7 +1888,7 @@ export default function HomePage() {
           onMouseLeave={onLookUp}
         >
           {[
-            { label: "Ankara Core",       bg: "#c8502a" },
+            { label: "Ankara Core",       bg: "#d4a843" },
             { label: "Monochrome Series", bg: "#1a1a1a" },
             { label: "Limited Drop",      bg: "#1a3a5c" },
             { label: "Signature Cuts",    bg: "#2d6a4f" },
@@ -2060,8 +1920,8 @@ export default function HomePage() {
           11 — SIGNATURE EXPERIENCE (dark)
       ══════════════════════════════════════════ */}
       <section
-        ref={expR.ref as React.RefObject<HTMLElement>}
-        className={`s exp-s${expR.visible ? " in" : ""}`}
+        ref={expRef}
+        className={`s exp-s${expVisible ? " in" : ""}`}
       >
         <div className="wm wm-exp" aria-hidden>AURA</div>
         <div className="page-w">
@@ -2104,8 +1964,8 @@ export default function HomePage() {
           12 — PRESS / AS SEEN ON
       ══════════════════════════════════════════ */}
       <section
-        ref={pressR.ref as React.RefObject<HTMLElement>}
-        className={`s press-s${pressR.visible ? " in" : ""}`}
+        ref={pressRef}
+        className={`s press-s${pressVisible ? " in" : ""}`}
       >
         <div className="wm wm-press" aria-hidden>PRESS</div>
         <div className="page-w">
@@ -2127,8 +1987,8 @@ export default function HomePage() {
           13 — TESTIMONIALS
       ══════════════════════════════════════════ */}
       <section
-        ref={testiR.ref as React.RefObject<HTMLElement>}
-        className={`s testi-s${testiR.visible ? " in" : ""}`}
+        ref={testiRef}
+        className={`s testi-s${testiVisible ? " in" : ""}`}
       >
         <div className="wm wm-testi" aria-hidden>WORN</div>
         <div className="testi-inner">
@@ -2159,8 +2019,8 @@ export default function HomePage() {
           14 — NEWSLETTER
       ══════════════════════════════════════════ */}
       <section
-        ref={newsR.ref as React.RefObject<HTMLElement>}
-        className={`s news-s${newsR.visible ? " in" : ""}`}
+        ref={newsRef}
+        className={`s news-s${newsVisible ? " in" : ""}`}
       >
         <div className="wm wm-newsletter" aria-hidden>CIRCLE</div>
         <div className="page-w">
@@ -2190,7 +2050,7 @@ export default function HomePage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
-                    <button type="submit" className="news-btn">Join</button>
+                    <button type="submit" className="news-btn" disabled={subLoading} aria-busy={subLoading}>{subLoading ? "Joining..." : "Join"}</button>
                   </div>
                 </form>
               )}
