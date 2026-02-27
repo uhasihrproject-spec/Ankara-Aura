@@ -23,13 +23,11 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { getFeaturedProducts, COLLECTIONS } from "@/lib/products";
 import type { Product } from "@/lib/products";
-import { useCart } from "@/lib/cart-context";
 
 /* ─── INTERSECTION OBSERVER HOOK ─── */
-function useReveal(threshold = 0.1): [React.RefObject<HTMLElement>, boolean] {
+function useReveal(threshold = 0.1) {
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -47,13 +45,13 @@ function useReveal(threshold = 0.1): [React.RefObject<HTMLElement>, boolean] {
     obs.observe(el);
     return () => obs.disconnect();
   }, [threshold]);
-  return [ref as React.RefObject<HTMLElement>, visible];
+  return { ref, visible };
 }
 
 /* ─── COUNT-UP ─── */
 function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
   const [val, setVal] = useState(0);
-  const [ref, visible] = useReveal(0.3);
+  const { ref, visible } = useReveal(0.3);
   useEffect(() => {
     if (!visible) return;
     let start = 0;
@@ -109,7 +107,7 @@ function Marquee({
 /* ─── COLLECTIONS SECTION ─── */
 function CollectionsSection() {
   const [active, setActive] = useState(0);
-  const [ref, visible] = useReveal(0.08);
+  const { ref, visible } = useReveal(0.08);
   const count = COLLECTIONS.length;
 
   useEffect(() => {
@@ -153,7 +151,7 @@ function CollectionsSection() {
           <div className="cols-img-wrap">
             {COLLECTIONS.map((col, i) => (
               <div key={col.slug} className={`col-frame${active === i ? " on" : ""}`}>
-                <Image src={col.image} alt={col.name} className="col-img" width={960} height={960} unoptimized />
+                <img src={col.image} alt={col.name} className="col-img" />
                 <div className="col-frame-label">{col.name}</div>
               </div>
             ))}
@@ -174,17 +172,66 @@ function CollectionsSection() {
   );
 }
 
+/* ─── PRODUCT TILE ─── */
+function ProductTile({
+  product,
+  index,
+  layout = "portrait",
+}: {
+  product: Product;
+  index: number;
+  layout?: "portrait" | "landscape";
+}) {
+  const [hovered, setHovered] = useState(false);
+  const img1 = product.images?.[0] ?? "/placeholder.jpg";
+  const img2 = product.images?.[1] ?? img1;
+
+  return (
+    <Link
+      href={`/shop/${product.slug}`}
+      className={`ptile ptile--${layout}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ transitionDelay: `${index * 0.1}s` }}
+    >
+      <div className="ptile-img-wrap">
+        <img
+          src={img1}
+          alt={product.name}
+          className={`ptile-img ptile-img--a${hovered ? " out" : ""}`}
+        />
+        <img
+          src={img2}
+          alt={product.name}
+          className={`ptile-img ptile-img--b${hovered ? " in" : ""}`}
+        />
+        <div className="ptile-overlay">
+          <span className="ptile-tag">{product.tags[0]}</span>
+          <span className="ptile-cta">
+            View Piece
+            <svg width="20" height="7" viewBox="0 0 20 7" fill="none" aria-hidden>
+              <path d="M0 3.5h18M15 1l3 2.5L15 6" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+            </svg>
+          </span>
+        </div>
+      </div>
+      <div className="ptile-meta">
+        <span className="ptile-name">{product.name}</span>
+        <span className="ptile-price">GH₵ {product.price.toLocaleString()}</span>
+      </div>
+    </Link>
+  );
+}
+
 /* ─── FEATURED TILE (dark, editorial) ─── */
 function FeaturedTile({
   product,
   index,
   variant = "compact",
-  onQuickAdd,
 }: {
   product: Product;
   index: number;
   variant?: "hero" | "compact" | "wide";
-  onQuickAdd?: (product: Product) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const img1 = product.images?.[0] ?? null;
@@ -209,8 +256,8 @@ function FeaturedTile({
       <div className="ptile-img-wrap">
         {img1 ? (
           <>
-            <Image src={img1} alt={product.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" className={`ptile-img ptile-img--a${hovered ? " out" : ""}`} />
-            {img2 && <Image src={img2} alt={product.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" className={`ptile-img ptile-img--b${hovered ? " in" : ""}`} />}
+            <img src={img1} alt={product.name} className={`ptile-img ptile-img--a${hovered ? " out" : ""}`} />
+            {img2 && <img src={img2} alt={product.name} className={`ptile-img ptile-img--b${hovered ? " in" : ""}`} />}
           </>
         ) : (
           <div className="ptile-placeholder">
@@ -228,17 +275,6 @@ function FeaturedTile({
                 <path d="M0 3h16M13 1l3 2-3 2" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
               </svg>
             </span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onQuickAdd?.(product);
-              }}
-              className="ptile-cta"
-            >
-              Add to Bag
-            </button>
           </div>
         </div>
       </div>
@@ -250,24 +286,21 @@ function FeaturedTile({
 export default function HomePage() {
   const featured = getFeaturedProducts();
 
-  const [statsRef, statsVisible] = useReveal(0.2);
-  const [quoteRef, quoteVisible] = useReveal(0.15);
-  const [dropRef, dropVisible] = useReveal(0.08);
-  const [storyRef, storyVisible] = useReveal(0.08);
-  const [processRef, processVisible] = useReveal(0.1);
-  const [quote2Ref, quote2Visible] = useReveal(0.15);
-  const [craftRef, craftVisible] = useReveal(0.08);
-  const [lookSectionRef, lookSectionVisible] = useReveal(0.1);
-  const [expRef, expVisible] = useReveal(0.08);
-  const [pressRef, pressVisible] = useReveal(0.1);
-  const [testiRef, testiVisible] = useReveal(0.15);
-  const [newsRef, newsVisible] = useReveal(0.12);
+  const statsR    = useReveal(0.2);
+  const quoteR    = useReveal(0.15);
+  const dropR     = useReveal(0.08);
+  const storyR    = useReveal(0.08);
+  const processR  = useReveal(0.1);
+  const quote2R   = useReveal(0.15);
+  const craftR    = useReveal(0.08);
+  const lookR     = useReveal(0.1);
+  const expR      = useReveal(0.08);
+  const pressR    = useReveal(0.1);
+  const testiR    = useReveal(0.15);
+  const newsR     = useReveal(0.12);
 
   const [email, setEmail]   = useState("");
   const [subbed, setSubbed] = useState(false);
-  const [homeAddedSlug, setHomeAddedSlug] = useState<string | null>(null);
-  const { addToCart } = useCart();
-  const [subLoading, setSubLoading] = useState(false);
   const [testiIdx, setTestiIdx] = useState(0);
 
   const testimonials = [
@@ -284,12 +317,7 @@ export default function HomePage() {
   const handleSub = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (!email.trim()) return;
-      setSubLoading(true);
-      setTimeout(() => {
-        setSubbed(true);
-        setSubLoading(false);
-      }, 700);
+      if (email.trim()) setSubbed(true);
     },
     [email]
   );
@@ -318,12 +346,6 @@ export default function HomePage() {
     el.style.cursor = "grab";
   };
 
-  const handleHomeQuickAdd = (product: Product) => {
-    addToCart({ slug: product.slug, name: product.name, price: product.price, size: "M", qty: 1 });
-    setHomeAddedSlug(product.slug);
-    setTimeout(() => setHomeAddedSlug(null), 1400);
-  };
-
   return (
     <>
       <style>{`
@@ -334,7 +356,7 @@ export default function HomePage() {
         :root {
           --ink:    #0b0b0a;
           --cream:  #f7f6f4;
-          --kente:  #d4a843;
+          --kente:  #c8502a;
           --gold:   #d4a843;
           --indigo: #1a3a5c;
           --forest: #2d6a4f;
@@ -442,198 +464,225 @@ export default function HomePage() {
           display: flex; flex-direction: column;
         }
 
-        /* animated ankara pattern bg */
         .hero-bg-pattern {
           position: absolute; inset: 0; z-index: 0; pointer-events: none;
         }
 
-        /* ghost ANKARA text behind everything */
+        /* ghost letters — purely decorative, tucked far left */
         .hero-ghost {
           position: absolute; pointer-events: none; user-select: none; z-index: 1;
           font-family: var(--fd);
-          font-size: clamp(110px, 18vw, 240px);
-          line-height: 0.86; letter-spacing: -0.02em;
-          -webkit-text-stroke: 1.2px rgba(11,11,10,0.06);
+          font-size: clamp(100px, 16vw, 220px);
+          line-height: 0.86;
+          -webkit-text-stroke: 1px rgba(11,11,10,0.05);
           color: transparent; white-space: nowrap;
-          animation: heroGhostDrift 20s ease-in-out infinite alternate;
+          animation: heroGhostDrift 24s ease-in-out infinite alternate;
         }
         @keyframes heroGhostDrift {
-          from { transform: translateX(-1%); }
-          to   { transform: translateX(1%); }
+          from { transform: translateX(0%); }
+          to   { transform: translateX(0.8%); }
         }
 
-        /* eyebrow bar */
+        /* eyebrow strip */
         .hero-eyebrow {
           position: relative; z-index: 3;
           display: flex; align-items: center;
-          padding: 22px 48px 0;
-          gap: 16px;
-          opacity: 0; transform: translateY(18px);
-          animation: revealUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+          padding: 20px 48px 0;
+          gap: 14px;
+          opacity: 0;
+          animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.08s forwards;
         }
         .hero-eyebrow-text {
-          font-family: var(--fa); font-size: 15px; color: rgba(8,8,7,0.38);
+          font-family: var(--fa); font-size: 14px; color: rgba(8,8,7,0.36);
+          white-space: nowrap;
         }
-        .hero-eyebrow-rule { flex: 1; height: 1px; background: var(--b); }
+        .hero-eyebrow-rule { flex: 1; height: 1px; background: var(--b); min-width: 24px; }
         .hero-eyebrow-dot {
-          width: 6px; height: 6px; border-radius: 50%;
-          background: var(--kente);
-          animation: kentePulse 2.5s ease-in-out infinite;
+          width: 5px; height: 5px; border-radius: 50%; background: var(--kente); flex-shrink: 0;
+          animation: kentePulse 2.2s ease-in-out infinite;
         }
-        @keyframes kentePulse {
-          0%,100% { opacity: 1; transform: scale(1); }
-          50%      { opacity: 0.5; transform: scale(0.6); }
+        @keyframes kentePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.45;transform:scale(0.55)} }
+
+        /* ── MAIN CONTENT AREA ── */
+        .hero-body-wrap {
+          position: relative; z-index: 2;
+          flex: 1;
+          display: grid;
+          grid-template-columns: 1fr 420px;
+          border-top: 1px solid var(--b);
+          margin-top: 24px;
         }
 
-        /* main grid */
-        .hero-grid {
-          position: relative; z-index: 2;
-          display: grid; grid-template-columns: 1fr 1fr;
-          flex: 1;
-          margin: 28px 0 0;
-          border-top: 1px solid var(--b);
-          border-left: 48px solid transparent;
-          border-right: 48px solid transparent;
-        }
+        /* LEFT — all text, left-aligned */
         .hero-left {
-          padding: 52px 48px 52px 0;
-          border-right: 1px solid var(--b);
+          padding: 56px 48px 56px 48px;
           display: flex; flex-direction: column;
-          justify-content: space-between; gap: 28px;
+          justify-content: space-between; gap: 32px;
+          border-right: 1px solid var(--b);
         }
+
+        /* headline */
+        .hero-hl-outer { overflow: hidden; }
+        .hero-hl {
+          font-family: var(--fd);
+          font-size: clamp(72px, 11.5vw, 160px);
+          line-height: 0.87;
+          display: block;
+          transform: translateY(108%);
+          animation: slideUp 1s cubic-bezier(0.16,1,0.3,1) forwards;
+        }
+        .hero-hl-solid { color: var(--ink); animation-delay: 0.18s; }
+        .hero-hl-outline {
+          -webkit-text-stroke: 2px var(--ink);
+          color: transparent; animation-delay: 0.28s;
+        }
+        @keyframes slideUp { from{transform:translateY(108%)} to{transform:translateY(0)} }
+
+        .hero-sub-line {
+          font-family: var(--fa);
+          font-size: clamp(16px, 2.2vw, 24px);
+          color: var(--kente); line-height: 1.3;
+          margin-top: 16px;
+          opacity: 0;
+          animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.46s forwards;
+        }
+
+        .hero-desc {
+          font-family: var(--fa); font-size: 17px; line-height: 1.7;
+          color: rgba(8,8,7,0.50); max-width: 400px; font-weight: 500;
+          opacity: 0;
+          animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.58s forwards;
+        }
+
+        /* CTAs */
+        .hero-cta-row {
+          display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+          opacity: 0;
+          animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.70s forwards;
+        }
+        .hero-btn-fill {
+          display: inline-flex; align-items: center; gap: 10px;
+          background: var(--ink); color: var(--cream);
+          padding: 14px 30px; text-decoration: none;
+          font-family: var(--fd); font-size: 12px; letter-spacing: 0.22em;
+          text-transform: uppercase;
+          border: 1.5px solid var(--ink);
+          transition: background 0.25s, color 0.25s, transform 0.2s;
+        }
+        .hero-btn-fill:hover { background: var(--kente); border-color: var(--kente); transform: translateY(-2px); }
+        .hero-btn-ghost {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: transparent; color: rgba(8,8,7,0.55);
+          padding: 14px 0; text-decoration: none;
+          font-family: var(--fd); font-size: 12px; letter-spacing: 0.2em;
+          text-transform: uppercase; border: none;
+          border-bottom: 1px solid rgba(8,8,7,0.18);
+          transition: color 0.25s, border-color 0.25s, gap 0.25s;
+        }
+        .hero-btn-ghost:hover { color: var(--ink); border-color: var(--ink); gap: 14px; }
+
+        /* RIGHT — visual panel */
         .hero-right {
           position: relative; overflow: hidden;
           display: flex; flex-direction: column; justify-content: flex-end;
-          background: rgba(8,8,7,0.025);
+          background: rgba(8,8,7,0.03);
         }
 
-        /* headline clip-reveal animation */
-        .hero-headline-wrap { overflow: hidden; }
-        .hero-headline-fill, .hero-headline-stroke {
-          font-family: var(--fd);
-          font-size: clamp(86px, 12.5vw, 172px);
-          line-height: 0.86;
-          letter-spacing: -0.01em;
-          display: block;
-          transform: translateY(105%);
-          animation: clipReveal 1s cubic-bezier(0.16,1,0.3,1) forwards;
-        }
-        .hero-headline-fill  { color: var(--ink); animation-delay: 0.22s; }
-        .hero-headline-stroke {
-          -webkit-text-stroke: 2.5px var(--ink);
-          color: transparent;
-          animation-delay: 0.32s;
-        }
-        @keyframes clipReveal {
-          from { transform: translateY(105%); }
-          to   { transform: translateY(0); }
+        /* pill badge top-right of image panel */
+        .hero-badge {
+          position: absolute; top: 20px; right: 20px; z-index: 5;
+          background: var(--kente); color: white;
+          padding: 8px 14px;
+          font-family: var(--fd); font-size: 10px; letter-spacing: 0.18em;
+          text-transform: uppercase;
+          opacity: 0;
+          animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.55s forwards;
         }
 
-        .hero-sub {
-          font-family: var(--fa);
-          font-size: clamp(19px, 2.5vw, 28px);
-          color: rgba(8,8,7,0.45); line-height: 1.35;
-          opacity: 0; transform: translateY(20px);
-          animation: revealUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.5s forwards;
-          display: block; margin-top: 12px;
-        }
-
-        .hero-body {
-          font-family: var(--fa); font-size: 18px;
-          line-height: 1.65; color: rgba(8,8,7,0.52);
-          max-width: 360px; font-weight: 500;
-          opacity: 0; transform: translateY(20px);
-          animation: revealUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.65s forwards;
-        }
-
-        .hero-cta-row {
-          display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-          opacity: 0; transform: translateY(20px);
-          animation: revealUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.78s forwards;
-        }
-
-        /* right panel label (slides in from right) */
-        .hero-label {
-          position: absolute; top: 24px; left: 24px; z-index: 4;
+        /* corner label */
+        .hero-corner {
+          position: absolute; top: 20px; left: 20px; z-index: 5;
           background: var(--ink); color: var(--cream);
-          padding: 14px 18px;
-          opacity: 0; transform: translateX(22px);
-          animation: revealRight 0.9s cubic-bezier(0.16,1,0.3,1) 0.45s forwards;
+          padding: 12px 16px;
+          opacity: 0;
+          animation: fadeLeft 0.8s cubic-bezier(0.16,1,0.3,1) 0.42s forwards;
         }
-        @keyframes revealRight {
-          from { opacity: 0; transform: translateX(22px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        .hero-label-sub { margin: 0; font-family: var(--fa); font-size: 12px; opacity: 0.5; }
-        .hero-label-main { margin: 5px 0 0; font-family: var(--fd); font-size: 26px; letter-spacing: 0.04em; line-height: 1.1; }
+        @keyframes fadeLeft { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
+        .hero-corner-sub { font-family: var(--fa); font-size: 11px; opacity: 0.5; margin: 0; }
+        .hero-corner-name { font-family: var(--fd); font-size: 22px; letter-spacing: 0.06em; line-height: 1.1; margin: 4px 0 0; }
 
-        /* floating model placeholder */
-        .hero-model-ph {
+        /* model area */
+        .hero-model-area {
           position: absolute; inset: 0;
           display: flex; align-items: center; justify-content: center;
           z-index: 2;
           animation: modelFloat 7s ease-in-out infinite;
         }
-        @keyframes modelFloat {
-          0%,100% { transform: translateY(0); }
-          50%      { transform: translateY(-14px); }
-        }
-        .hero-ph-big {
+        @keyframes modelFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+        .hero-model-ph-big {
           font-family: var(--fd);
-          font-size: clamp(52px, 7.5vw, 96px);
-          -webkit-text-stroke: 1.5px rgba(0,0,0,0.08);
-          color: transparent; line-height: 0.9; text-align: center;
-          letter-spacing: -0.02em;
+          font-size: clamp(44px, 6.5vw, 88px);
+          -webkit-text-stroke: 1.5px rgba(0,0,0,0.07);
+          color: transparent; text-align: center; line-height: 0.9;
         }
-        .hero-ph-hw { font-family: var(--fa); font-size: 15px; color: rgba(0,0,0,0.2); text-align: center; margin-top: 8px; }
+        .hero-model-ph-hw { font-family: var(--fa); font-size: 13px; color: rgba(0,0,0,0.18); text-align: center; margin-top: 6px; }
 
-        /* product strip at bottom of right panel */
-        .hero-strip {
+        /* featured piece strip at bottom */
+        .hero-piece-strip {
           position: relative; z-index: 4;
-          border-top: 1px solid var(--b);
-          background: var(--cream);
-          padding: 18px 24px;
-          display: flex; align-items: center; justify-content: space-between; gap: 14px;
+          border-top: 1px solid var(--b); background: var(--cream);
+          padding: 16px 20px;
+          display: flex; align-items: center; justify-content: space-between; gap: 12px;
           opacity: 0;
-          animation: revealUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.9s forwards;
+          animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.88s forwards;
         }
-        .hero-strip-name { font-family: var(--fa); font-size: 14px; color: rgba(8,8,7,0.5); margin-bottom: 3px; }
-        .hero-strip-price { font-family: var(--fd); font-size: 28px; line-height: 1; letter-spacing: 0.02em; }
+        .hero-piece-label { font-family: var(--fa); font-size: 12px; color: rgba(8,8,7,0.45); margin-bottom: 2px; }
+        .hero-piece-price { font-family: var(--fd); font-size: 26px; line-height: 1; letter-spacing: 0.02em; }
+        .hero-piece-btn {
+          display: inline-block; background: var(--ink); color: white;
+          padding: 10px 18px; text-decoration: none;
+          font-family: var(--fd); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+          white-space: nowrap;
+          transition: background 0.2s;
+        }
+        .hero-piece-btn:hover { background: var(--kente); }
 
-        /* stats row below grid */
-        .hero-stats {
-          display: grid; grid-template-columns: repeat(4,1fr);
-          border-left: 48px solid transparent;
-          border-right: 48px solid transparent;
-          border-top: 1px solid var(--b);
-          margin-bottom: 0;
+        /* stats bar */
+        .hero-stats-bar {
           position: relative; z-index: 2;
+          display: grid; grid-template-columns: repeat(4,1fr);
+          border-top: 1px solid var(--b);
         }
-        .hero-stat {
-          padding: 20px 28px; border-right: 1px solid var(--b);
-          opacity: 0; transform: translateY(20px);
-          animation: revealUp 0.8s cubic-bezier(0.16,1,0.3,1) forwards;
+        .hero-stat-cell {
+          padding: 18px 24px; border-right: 1px solid var(--b);
+          opacity: 0;
+          animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) forwards;
         }
-        .hero-stat:last-child { border-right: none; }
-        .hero-stat:nth-child(1) { animation-delay: 1.0s; }
-        .hero-stat:nth-child(2) { animation-delay: 1.1s; }
-        .hero-stat:nth-child(3) { animation-delay: 1.2s; }
-        .hero-stat:nth-child(4) { animation-delay: 1.3s; }
-        .hero-stat-n { font-family: var(--fd); font-size: 34px; line-height: 1; color: var(--kente); }
-        .hero-stat-l { font-family: var(--fa); font-size: 14px; color: rgba(8,8,7,0.38); margin-top: 3px; }
+        .hero-stat-cell:last-child { border-right: none; }
+        .hero-stat-cell:nth-child(1){animation-delay:0.95s}
+        .hero-stat-cell:nth-child(2){animation-delay:1.05s}
+        .hero-stat-cell:nth-child(3){animation-delay:1.15s}
+        .hero-stat-cell:nth-child(4){animation-delay:1.25s}
+        .hsc-n { font-family: var(--fd); font-size: 28px; color: var(--kente); line-height: 1; }
+        .hsc-l { font-family: var(--fa); font-size: 13px; color: rgba(8,8,7,0.35); margin-top: 2px; }
 
-        @keyframes revealUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
 
-        @media (max-width: 900px) {
-          .hero-grid { grid-template-columns: 1fr; border-left-width: 20px; border-right-width: 20px; }
-          .hero-left { border-right: none; border-bottom: 1px solid var(--b); padding: 40px 0; }
-          .hero-right { min-height: 420px; }
-          .hero-eyebrow { padding: 20px 20px 0; }
-          .hero-stats { grid-template-columns: 1fr 1fr; border-left-width: 20px; border-right-width: 20px; }
-          .hero-stat:nth-child(2) { border-right: none; }
+        /* ─── HERO MOBILE ─── */
+        @media (max-width: 860px) {
+          .hero-eyebrow { padding: 18px 20px 0; }
+          .hero-body-wrap { grid-template-columns: 1fr; }
+          .hero-left { padding: 36px 20px; border-right: none; border-bottom: 1px solid var(--b); gap: 24px; }
+          .hero-right { min-height: 360px; }
+          .hero-stats-bar { grid-template-columns: 1fr 1fr; }
+          .hero-stat-cell:nth-child(2) { border-right: none; }
+          .hero-stat-cell { padding: 14px 16px; }
+        }
+        @media (max-width: 480px) {
+          .hero-left { padding: 28px 16px; }
+          .hero-stats-bar { grid-template-columns: repeat(2,1fr); }
+          .hero-stat-cell { padding: 12px 14px; }
+          .hsc-n { font-size: 22px; }
         }
 
         /* ═══════════════════════════════════════════
@@ -1044,21 +1093,11 @@ export default function HomePage() {
           font-family: var(--fa); font-size: 15px; color: var(--gold);
         }
         .ptile-cta {
-          display: inline-flex; align-items: center; gap: 8px;
-          font-size: 10px; letter-spacing: 0.16em;
-          text-transform: uppercase;
-          background: var(--ink);
-          color: var(--cream);
-          border: 1px solid rgba(247,246,244,0.6);
-          padding: 8px 12px;
-          text-decoration: none;
-          cursor: pointer;
-          transition: background 0.2s, color 0.2s, transform 0.18s;
-        }
-        .ptile-cta:hover {
-          background: transparent;
-          color: var(--cream);
-          transform: translateY(-1px);
+          display: flex; align-items: center; gap: 8px;
+          font-size: 9px; letter-spacing: 0.22em;
+          text-transform: uppercase; color: rgba(247,246,244,0.7);
+          border-bottom: 1px solid rgba(247,246,244,0.3);
+          padding-bottom: 2px;
         }
 
         /* drop footer */
@@ -1595,15 +1634,160 @@ export default function HomePage() {
         }
         .bottom-strip .mq-dot { color: var(--gold); }
 
-        /* ── global responsive ── */
+        /* ── GLOBAL MOBILE IMPROVEMENTS ── */
         @media (max-width: 768px) {
-          .story-s  { padding: 80px 0; }
-          .craft-s  { padding: 80px 0; }
-          .look-s   { padding: 72px 0; }
-          .testi-s  { padding: 80px 0; }
-          .quote2-s { padding: 80px 0; }
+          .story-s  { padding: 64px 0; }
+          .craft-s  { padding: 64px 0; }
+          .look-s   { padding: 56px 0; }
+          .testi-s  { padding: 72px 0; }
+          .quote2-s { padding: 72px 0; }
+          .news-s   { padding: 72px 0; }
+          .drop-header { padding: 40px 20px 32px; flex-direction: column; align-items: flex-start; gap: 16px; }
+          .drop-footer { padding: 28px 20px; }
+          .story-layout { grid-template-columns: 1fr; gap: 40px; }
+          .news-layout { grid-template-columns: 1fr; gap: 40px; }
+          .cols-layout { grid-template-columns: 1fr; gap: 36px; }
+          .col-btn-stroke, .col-btn-fill { font-size: clamp(26px, 8vw, 48px); }
+          .quote-s { padding: 80px 0; }
+          .quote-inner { padding: 0 20px; }
+          .quote2-inner { padding: 0 16px; }
+          .testi-inner { padding: 0 20px; }
+          .process-row { flex-direction: column; }
+          .process-item { border-right: none; border-bottom: 1px solid rgba(247,246,244,0.07); padding: 36px 20px; }
+          .process-item:last-child { border-bottom: none; }
+          .craft-head { grid-template-columns: 1fr; gap: 16px; }
+          .craft-note { text-align: left; }
+          .craft-row { grid-template-columns: 36px 1fr; gap: 14px; }
+          .cr-desc { display: none; }
+          .exp-grid { grid-template-columns: 1fr 1fr; }
+          .look-head { padding: 0 20px; flex-direction: column; gap: 10px; }
+          .look-scroll { padding: 0 20px 20px; }
+          .collections-s { padding: 60px 0; }
+          .stats-s { padding: 56px 0; }
+          .stats-grid { grid-template-columns: 1fr 1fr; gap: 28px 0; }
+          .stat-item { padding: 0 20px; }
+          .stat-item:nth-child(odd) { border-left: none; padding-left: 0; }
+        }
+        @media (max-width: 540px) {
+          .exp-grid { grid-template-columns: 1fr; }
+          .exp-note { flex-direction: column; }
+          .stats-grid { grid-template-columns: 1fr; gap: 0; }
+          .stat-item { border-left: none; border-top: 1px solid var(--b); padding: 20px 0 0; }
+          .stat-item:first-child { border-top: none; padding-top: 0; }
+          .drop-headline { font-size: clamp(56px, 15vw, 80px); }
+          .press-logos { gap: 24px; flex-direction: column; align-items: center; }
+          .press-divider { display: none; }
         }
       `}</style>
+
+      {/* ══════════════════════════════════════════
+          00 — HERO
+      ══════════════════════════════════════════ */}
+      <section className="hero-s">
+        {/* Ankara pattern */}
+        <div className="hero-bg-pattern">
+          <svg xmlns="http://www.w3.org/2000/svg" style={{position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.08}} aria-hidden>
+            <defs>
+              <pattern id="hp" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
+                <rect x="0.5" y="0.5" width="63" height="63" fill="none" stroke="#000" strokeWidth="0.6"/>
+                <polygon points="32,2 62,32 32,62 2,32" fill="none" stroke="#000" strokeWidth="0.9"/>
+                <polygon points="0,0 16,0 0,16" fill="#000" opacity="0.1"/>
+                <polygon points="64,0 48,0 64,16" fill="#000" opacity="0.1"/>
+                <polygon points="0,64 16,64 0,48" fill="#000" opacity="0.1"/>
+                <polygon points="64,64 48,64 64,48" fill="#000" opacity="0.1"/>
+                <polygon points="32,20 44,32 32,44 20,32" fill="none" stroke="#c8502a" strokeWidth="0.6" opacity="0.55"/>
+                <circle cx="32" cy="32" r="2" fill="#c8502a" opacity="0.2"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#hp)"/>
+          </svg>
+        </div>
+
+        {/* ghost text — decorative background letters */}
+        <div className="hero-ghost" style={{top:"-10px",left:"-4px"}}>ANKARA</div>
+        <div className="hero-ghost" style={{top:"148px",left:"-4px",animationDelay:"3s"}}>AURA</div>
+
+        {/* eyebrow */}
+        <div className="hero-eyebrow">
+          <span className="hero-eyebrow-text">Ankara Aura</span>
+          <div className="hero-eyebrow-rule"/>
+          <div className="hero-eyebrow-dot"/>
+          <span className="hero-eyebrow-text" style={{color:"var(--kente)"}}>SS 2025</span>
+        </div>
+
+        {/* two-column body */}
+        <div className="hero-body-wrap">
+
+          {/* ── LEFT: copy ── */}
+          <div className="hero-left">
+            {/* headline */}
+            <div>
+              <div className="hero-hl-outer">
+                <span className="hero-hl hero-hl-solid">STREET</span>
+              </div>
+              <div className="hero-hl-outer">
+                <span className="hero-hl hero-hl-outline">LUXURY</span>
+              </div>
+              <span className="hero-sub-line">where culture meets couture ✦</span>
+            </div>
+
+            {/* body copy */}
+            <p className="hero-desc">
+              Black &amp; white at the core — Ankara colour, restrained.
+              Every piece carries the texture of tradition, crafted for the modern street.
+            </p>
+
+            {/* CTAs */}
+            <div className="hero-cta-row">
+              <Link href="/shop" className="hero-btn-fill">Shop Now</Link>
+              <Link href="/customize" className="hero-btn-ghost">
+                Customize it
+                <svg width="18" height="6" viewBox="0 0 18 6" fill="none" aria-hidden>
+                  <path d="M0 3h16M13 1l3 2-3 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              </Link>
+            </div>
+          </div>
+
+          {/* ── RIGHT: image panel ── */}
+          <div className="hero-right">
+            {/* corner label */}
+            <div className="hero-corner">
+              <p className="hero-corner-sub">Street Luxury</p>
+              <p className="hero-corner-name">ANKARA<br/>AURA</p>
+            </div>
+            {/* kente badge */}
+            <div className="hero-badge">New Drop</div>
+
+            {/* model placeholder */}
+            <div className="hero-model-area">
+              <div style={{textAlign:"center"}}>
+                <div className="hero-model-ph-big">MODEL<br/>HERE</div>
+                <p className="hero-model-ph-hw">your image goes here ✦</p>
+              </div>
+            </div>
+
+            {/* featured piece strip */}
+            <div className="hero-piece-strip">
+              <div>
+                <p className="hero-piece-label">Featured Piece</p>
+                <p className="hero-piece-price">GH₵ 120</p>
+              </div>
+              <Link href="/shop/ankara-oversized-tee" className="hero-piece-btn">View Piece →</Link>
+            </div>
+          </div>
+        </div>
+
+        {/* stats bar */}
+        <div className="hero-stats-bar">
+          {[["200+","Pieces crafted"],["4.9★","Customer rating"],["48h","Delivery, Accra"],["100%","Ankara DNA"]].map(([n,l],i) => (
+            <div key={i} className="hero-stat-cell">
+              <div className="hsc-n">{n}</div>
+              <div className="hsc-l">{l}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ══════════════════════════════════════════
           01 — TAGLINE STRIP
@@ -1629,8 +1813,8 @@ export default function HomePage() {
           02 — STATS BAR
       ══════════════════════════════════════════ */}
       <section
-        ref={statsRef}
-        className={`s stats-s${statsVisible ? " in" : ""}`}
+        ref={statsR.ref as React.RefObject<HTMLElement>}
+        className={`s stats-s${statsR.visible ? " in" : ""}`}
       >
         <div className="page-w">
           <div className="stats-grid">
@@ -1661,8 +1845,8 @@ export default function HomePage() {
           04 — CULTURE QUOTE (dark)
       ══════════════════════════════════════════ */}
       <section
-        ref={quoteRef}
-        className={`s quote-s${quoteVisible ? " in" : ""}`}
+        ref={quoteR.ref as React.RefObject<HTMLElement>}
+        className={`s quote-s${quoteR.visible ? " in" : ""}`}
       >
         <div className="wm wm-quote" aria-hidden>AURA</div>
         <div className="quote-stripes-top" aria-hidden />
@@ -1682,15 +1866,15 @@ export default function HomePage() {
           05 — THE DROP (dark editorial)
       ══════════════════════════════════════════ */}
       <section
-        ref={dropRef}
-        className={`s drop-s${dropVisible ? " in" : ""}`}
+        ref={dropR.ref as React.RefObject<HTMLElement>}
+        className={`s drop-s${dropR.visible ? " in" : ""}`}
       >
         {/* ankara pattern bg */}
         <svg className="drop-pattern" xmlns="http://www.w3.org/2000/svg" aria-hidden>
           <defs>
             <pattern id="dp" width="80" height="80" patternUnits="userSpaceOnUse">
               <polygon points="40,3 77,40 40,77 3,40" fill="none" stroke="#d4a843" strokeWidth="0.8"/>
-              <polygon points="40,20 60,40 40,60 20,40" fill="none" stroke="#d4a843" strokeWidth="0.5"/>
+              <polygon points="40,20 60,40 40,60 20,40" fill="none" stroke="#c8502a" strokeWidth="0.5"/>
               <circle cx="40" cy="40" r="2" fill="#d4a843" opacity="0.6"/>
             </pattern>
           </defs>
@@ -1704,7 +1888,7 @@ export default function HomePage() {
             <span className="drop-headline-stroke">DROP</span>
           </h2>
           <div className="drop-header-right">
-            <span className="drop-season">{homeAddedSlug ? "Added to bag ✓" : "SS 2025 — Featured Pieces"}</span>
+            <span className="drop-season">SS 2025 — Featured Pieces</span>
             <Link href="/shop" className="arrow-link arrow-link--light">
               <span>View All Pieces</span>
               <svg width="28" height="9" viewBox="0 0 28 9" fill="none" aria-hidden>
@@ -1718,18 +1902,18 @@ export default function HomePage() {
         <div className={`drop-grid${featured.length <= 2 ? " two" : ""}`}>
           {/* hero tile — tall left */}
           {featured[0] && (
-            <FeaturedTile product={featured[0]} index={0} variant="hero" onQuickAdd={handleHomeQuickAdd} />
+            <FeaturedTile product={featured[0]} index={0} variant="hero" />
           )}
           {/* right column */}
           <div className="drop-right-col">
             {featured.slice(1, 3).map((p, i) => (
-              <FeaturedTile key={p.slug} product={p} index={i + 1} variant="compact" onQuickAdd={handleHomeQuickAdd} />
+              <FeaturedTile key={p.slug} product={p} index={i + 1} variant="compact" />
             ))}
           </div>
           {/* fourth tile spans full */}
           {featured[3] && (
             <div style={{ gridColumn: featured.length <= 2 ? "auto" : "1 / -1" }}>
-              <FeaturedTile product={featured[3]} index={3} variant="wide" onQuickAdd={handleHomeQuickAdd} />
+              <FeaturedTile product={featured[3]} index={3} variant="wide" />
             </div>
           )}
         </div>
@@ -1750,8 +1934,8 @@ export default function HomePage() {
           06 — BRAND STORY
       ══════════════════════════════════════════ */}
       <section
-        ref={storyRef}
-        className={`s story-s${storyVisible ? " in" : ""}`}
+        ref={storyR.ref as React.RefObject<HTMLElement>}
+        className={`s story-s${storyR.visible ? " in" : ""}`}
       >
         <div className="wm wm-story" aria-hidden>ANKARA</div>
         <div className="page-w">
@@ -1795,8 +1979,8 @@ export default function HomePage() {
           07 — PROCESS STRIP (dark)
       ══════════════════════════════════════════ */}
       <section
-        ref={processRef}
-        className={`s process-s${processVisible ? " in" : ""}`}
+        ref={processR.ref as React.RefObject<HTMLElement>}
+        className={`s process-s${processR.visible ? " in" : ""}`}
       >
         <div className="process-row">
           {[
@@ -1818,8 +2002,8 @@ export default function HomePage() {
           08 — SECOND QUOTE (editorial, light)
       ══════════════════════════════════════════ */}
       <section
-        ref={quote2Ref}
-        className={`s quote2-s${quote2Visible ? " in" : ""}`}
+        ref={quote2R.ref as React.RefObject<HTMLElement>}
+        className={`s quote2-s${quote2R.visible ? " in" : ""}`}
       >
         <div className="wm wm-q2" aria-hidden>WORN</div>
         <div className="quote2-inner">
@@ -1839,8 +2023,8 @@ export default function HomePage() {
           09 — CRAFTSMANSHIP
       ══════════════════════════════════════════ */}
       <section
-        ref={craftRef}
-        className={`s craft-s${craftVisible ? " in" : ""}`}
+        ref={craftR.ref as React.RefObject<HTMLElement>}
+        className={`s craft-s${craftR.visible ? " in" : ""}`}
       >
         <div className="wm wm-craft" aria-hidden>CRAFT</div>
         <div className="page-w">
@@ -1877,8 +2061,8 @@ export default function HomePage() {
           10 — LOOKBOOK PREVIEW
       ══════════════════════════════════════════ */}
       <section
-        ref={lookSectionRef}
-        className={`s look-s${lookSectionVisible ? " in" : ""}`}
+        ref={lookR.ref as React.RefObject<HTMLElement>}
+        className={`s look-s${lookR.visible ? " in" : ""}`}
       >
         <div className="look-head">
           <div>
@@ -1898,7 +2082,7 @@ export default function HomePage() {
           onMouseLeave={onLookUp}
         >
           {[
-            { label: "Ankara Core",       bg: "#d4a843" },
+            { label: "Ankara Core",       bg: "#c8502a" },
             { label: "Monochrome Series", bg: "#1a1a1a" },
             { label: "Limited Drop",      bg: "#1a3a5c" },
             { label: "Signature Cuts",    bg: "#2d6a4f" },
@@ -1930,8 +2114,8 @@ export default function HomePage() {
           11 — SIGNATURE EXPERIENCE (dark)
       ══════════════════════════════════════════ */}
       <section
-        ref={expRef}
-        className={`s exp-s${expVisible ? " in" : ""}`}
+        ref={expR.ref as React.RefObject<HTMLElement>}
+        className={`s exp-s${expR.visible ? " in" : ""}`}
       >
         <div className="wm wm-exp" aria-hidden>AURA</div>
         <div className="page-w">
@@ -1974,8 +2158,8 @@ export default function HomePage() {
           12 — PRESS / AS SEEN ON
       ══════════════════════════════════════════ */}
       <section
-        ref={pressRef}
-        className={`s press-s${pressVisible ? " in" : ""}`}
+        ref={pressR.ref as React.RefObject<HTMLElement>}
+        className={`s press-s${pressR.visible ? " in" : ""}`}
       >
         <div className="wm wm-press" aria-hidden>PRESS</div>
         <div className="page-w">
@@ -1997,8 +2181,8 @@ export default function HomePage() {
           13 — TESTIMONIALS
       ══════════════════════════════════════════ */}
       <section
-        ref={testiRef}
-        className={`s testi-s${testiVisible ? " in" : ""}`}
+        ref={testiR.ref as React.RefObject<HTMLElement>}
+        className={`s testi-s${testiR.visible ? " in" : ""}`}
       >
         <div className="wm wm-testi" aria-hidden>WORN</div>
         <div className="testi-inner">
@@ -2029,8 +2213,8 @@ export default function HomePage() {
           14 — NEWSLETTER
       ══════════════════════════════════════════ */}
       <section
-        ref={newsRef}
-        className={`s news-s${newsVisible ? " in" : ""}`}
+        ref={newsR.ref as React.RefObject<HTMLElement>}
+        className={`s news-s${newsR.visible ? " in" : ""}`}
       >
         <div className="wm wm-newsletter" aria-hidden>CIRCLE</div>
         <div className="page-w">
@@ -2060,7 +2244,7 @@ export default function HomePage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
-                    <button type="submit" className="news-btn" disabled={subLoading} aria-busy={subLoading}>{subLoading ? "Joining..." : "Join"}</button>
+                    <button type="submit" className="news-btn">Join</button>
                   </div>
                 </form>
               )}

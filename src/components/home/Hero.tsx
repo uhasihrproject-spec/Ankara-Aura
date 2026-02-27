@@ -224,19 +224,6 @@ export default function Hero() {
 
         <div className="ghost" style={{ top: "-14px", left: "-6px" }}>ANKARA</div>
         <div className="ghost" style={{ top: "152px", left: "-6px" }}>AURA</div>
-
-        <div className="tw">
-          <div className="tr">
-            {[...Array(2)].map((_, i) => (
-              <span key={i} style={{ display: "flex", alignItems: "center" }}>
-                {["Ankara Aura", "Street Luxury", "Premium Fabric", "Cultural Texture", "New Collection", "Accra, Ghana"].map((t) => (
-                  <span key={t} className="ti">{t}<span className="td" /></span>
-                ))}
-              </span>
-            ))}
-          </div>
-        </div>
-
         <div className="hi">
           <div className={`ew af ${on(1)}`}>
             <span className="ew-text">Ankara Aura</span>

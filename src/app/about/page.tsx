@@ -1,266 +1,931 @@
-export default function AboutPage() {
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+
+/* ── Intersection reveal hook ── */
+function useReveal(threshold = 0.12) {
+  const ref = useRef<HTMLElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
+
+/* ── Ankara SVG pattern ── */
+function AnkaraPattern({ id = "ap", opacity = 0.07, color = "#0b0b0a" }: { id?: string; opacity?: number; color?: string }) {
   return (
-    <div className="about-page">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity, pointerEvents: "none" }}
+      aria-hidden
+    >
+      <defs>
+        <pattern id={id} x="0" y="0" width="72" height="72" patternUnits="userSpaceOnUse">
+          <rect x="0.5" y="0.5" width="71" height="71" fill="none" stroke={color} strokeWidth="0.7" />
+          <polygon points="36,3 69,36 36,69 3,36" fill="none" stroke={color} strokeWidth="1.1" />
+          <polygon points="36,20 52,36 36,52 20,36" fill="none" stroke={color} strokeWidth="0.7" />
+          <polygon points="0,0 20,0 0,20" fill={color} opacity="0.12" />
+          <polygon points="72,0 52,0 72,20" fill={color} opacity="0.12" />
+          <polygon points="0,72 20,72 0,52" fill={color} opacity="0.12" />
+          <polygon points="72,72 52,72 72,52" fill={color} opacity="0.12" />
+          <circle cx="36" cy="36" r="2.5" fill={color} opacity="0.18" />
+          <circle cx="36" cy="3"  r="1.5" fill={color} opacity="0.15" />
+          <circle cx="69" cy="36" r="1.5" fill={color} opacity="0.15" />
+          <circle cx="36" cy="69" r="1.5" fill={color} opacity="0.15" />
+          <circle cx="3"  cy="36" r="1.5" fill={color} opacity="0.15" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill={`url(#${id})`} />
+    </svg>
+  );
+}
+
+/* ── Kente stripe bar ── */
+function KenteBar({ height = 3 }: { height?: number }) {
+  return (
+    <div style={{
+      height,
+      background: `repeating-linear-gradient(90deg,
+        #c8502a 0, #c8502a 20px,
+        #d4a843 20px, #d4a843 40px,
+        #1a3a5c 40px, #1a3a5c 60px,
+        #2d6a4f 60px, #2d6a4f 80px,
+        #0b0b0a 80px, #0b0b0a 100px)`,
+      backgroundSize: "100px 100%",
+      flexShrink: 0,
+    }} />
+  );
+}
+
+const PHILOSOPHY = [
+  { title: "Culture is Power", body: "Every thread carries history. We don't borrow from culture — we are born from it. Ankara Aura is not inspired by Africa. It is African, structured for the world." },
+  { title: "Simplicity is Luxury", body: "We resist noise. The most powerful statement is restraint. A single Ankara detail on clean black cotton speaks louder than a thousand patterns fighting for attention." },
+  { title: "Details Define Class", body: "The lining. The stitch. The way a sleeve breaks at the wrist. These are not afterthoughts. At Ankara Aura, craft lives in the millimetres most brands ignore." },
+  { title: "Identity is Global", body: "Our roots are Ghanaian. Our vision is planetary. We are not a 'African brand for African people' — we are a world-class brand that happens to be African. The distinction matters." },
+];
+
+const PROCESS = [
+  { num: "01", name: "Design Sketch", desc: "Every piece begins on paper. No digital shortcut replaces the hand — the weight of the pencil decides the weight of the garment." },
+  { num: "02", name: "Fabric Selection", desc: "We source directly. Ankara wax prints chosen for colour depth, weave integrity, and cultural resonance. No compromise at the source." },
+  { num: "03", name: "Precision Finishing", desc: "Seams pressed. Hems deliberate. Each piece inspected before it moves. The standard is what we'd wear ourselves — which is the only standard that matters." },
+  { num: "04", name: "The Unboxing", desc: "The package is part of the garment. Magnetic box. Tissue wrap. Handwritten note. Because the first touch sets the tone for everything that follows." },
+];
+
+const FOUNDERS = [
+  {
+    name: "Eldwin Asante",
+    title: "Founder & Creative Director",
+    bio: "Eldwin built Ankara Aura from a conviction — that African design, properly executed, belongs in every room that matters. His obsession with branding, detail, and cultural authenticity drives every decision the brand makes.",
+  },
+  {
+    name: "Kelvin Baidoo",
+    title: "Co-Founder & Operations Director",
+    bio: "Kelvin ensures that the vision meets reality. From supply chain to fulfilment, he builds the systems that allow Ankara Aura to operate with the precision of a global brand.",
+  },
+  {
+    name: "Jame Reynolds",
+    title: "Co-Founder & Brand Strategist",
+    bio: "Jame translates the brand's soul into strategy. His global perspective and deep understanding of luxury positioning shape how Ankara Aura speaks to the world.",
+  },
+];
+
+export default function AboutPage() {
+  const originR   = useReveal(0.08);
+  const auraR     = useReveal(0.1);
+  const philoR    = useReveal(0.07);
+  const processR  = useReveal(0.07);
+  const visionR   = useReveal(0.1);
+  const founderR  = useReveal(0.08);
+  const closeR    = useReveal(0.15);
+
+  const [heroVisible, setHeroVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setHeroVisible(true), 60);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-          --ink:#0b0b0a;
-          --cream:#f7f6f4;
-          --gold:#d4a843;
-          --line:rgba(8,8,7,0.12);
+          --ink:    #0b0b0a;
+          --cream:  #f7f6f4;
+          --kente:  #c8502a;
+          --gold:   #d4a843;
+          --indigo: #1a3a5c;
+          --forest: #2d6a4f;
+          --b:      rgba(11,11,10,0.09);
+          --fd: 'Bebas Neue', sans-serif;
+          --fb: 'DM Sans', sans-serif;
+          --fa: 'Caveat', cursive;
         }
+        body { background: var(--cream); color: var(--ink); font-family: var(--fb); overflow-x: hidden; }
+        .pw { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+        @media(max-width:768px){ .pw{ padding: 0 22px; } }
 
-        .about-page { background: var(--cream); color: var(--ink); font-family:'DM Sans', sans-serif; }
-        .sec { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
-        .w { max-width: 1240px; margin: 0 auto; padding: 0 30px; }
+        /* ── reveal system ── */
+        .rv {
+          opacity: 0; transform: translateY(44px);
+          transition: opacity 1.1s cubic-bezier(0.16,1,0.3,1), transform 1.1s cubic-bezier(0.16,1,0.3,1);
+        }
+        .rv.on { opacity: 1; transform: none; }
+        .rv-l { opacity:0; transform: translateX(-36px);
+          transition: opacity 1s cubic-bezier(0.16,1,0.3,1), transform 1s cubic-bezier(0.16,1,0.3,1); }
+        .rv-l.on { opacity:1; transform: none; }
+        .rv-r { opacity:0; transform: translateX(36px);
+          transition: opacity 1s cubic-bezier(0.16,1,0.3,1), transform 1s cubic-bezier(0.16,1,0.3,1); }
+        .rv-r.on { opacity:1; transform: none; }
 
-        .wm {
-          position:absolute; pointer-events:none; user-select:none;
-          font-family:'Bebas Neue', sans-serif;
-          font-size: clamp(120px, 16vw, 260px);
-          line-height:0.85;
-          -webkit-text-stroke:1px rgba(8,8,7,0.09);
-          color:transparent;
-          z-index:0;
-          letter-spacing:0.01em;
-          white-space:nowrap;
-        }
+        .child { opacity:0; transform:translateY(28px); clip-path: inset(0 0 100% 0);
+          transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1), clip-path 0.85s cubic-bezier(0.16,1,0.3,1); }
+        .rv.on .child, .rv-l.on .child, .rv-r.on .child { opacity:1; transform:none; clip-path: inset(0 0 0% 0); }
+        .child:nth-child(1){transition-delay:0.05s}
+        .child:nth-child(2){transition-delay:0.14s}
+        .child:nth-child(3){transition-delay:0.23s}
+        .child:nth-child(4){transition-delay:0.32s}
+        .child:nth-child(5){transition-delay:0.41s}
+        .child:nth-child(6){transition-delay:0.50s}
 
-        .hero { min-height: 82vh; display:flex; align-items:center; }
-        .hero::before {
-          content:"";
-          position:absolute; inset:0;
-          background:
-            radial-gradient(circle at 20% 18%, rgba(212,168,67,0.16), transparent 42%),
-            repeating-linear-gradient(45deg, rgba(8,8,7,0.045) 0 2px, transparent 2px 34px);
-          opacity:0.6;
+        /* hero clip reveals */
+        .hw { overflow: hidden; }
+        .hline {
+          display: block;
+          transform: translateY(108%);
+          transition: transform 1.1s cubic-bezier(0.16,1,0.3,1);
         }
-        .hero-inner { position:relative; z-index:2; padding: 84px 0; }
-        .eyebrow { font-size:10px; letter-spacing:0.22em; text-transform:uppercase; color:rgba(8,8,7,0.52); }
-        .statement {
-          margin-top: 18px;
-          font-family:'Bebas Neue', sans-serif;
-          font-size: clamp(78px, 13.5vw, 190px);
-          line-height:0.84;
-          letter-spacing:0.02em;
-        }
-        .hook {
-          margin-top: 20px;
-          max-width: 740px;
-          font-family:'Caveat', cursive;
-          font-size: clamp(20px, 2.4vw, 34px);
-          line-height:1.45;
-          color:rgba(8,8,7,0.62);
-        }
+        .hline.on { transform: translateY(0); }
+        .hline.d1 { transition-delay: 0.08s; }
+        .hline.d2 { transition-delay: 0.18s; }
+        .hline.d3 { transition-delay: 0.28s; }
 
-        .origin { padding: 100px 0; }
-        .origin-grid { position:relative; z-index:2; display:grid; grid-template-columns: 1.1fr 1fr; gap: 50px; align-items:start; }
-        .sec-title {
-          font-family:'Bebas Neue', sans-serif;
-          font-size: clamp(58px, 9vw, 128px);
-          line-height:0.86;
-          letter-spacing:0.02em;
+        /* ═══ 01 — HERO ═══ */
+        .ab-hero {
+          position: relative; overflow: hidden;
+          min-height: 100svh;
+          display: flex; flex-direction: column; justify-content: center;
+          background: var(--cream);
+          border-bottom: 1px solid var(--b);
         }
-        .origin-copy p { font-size:16px; line-height:1.95; color:rgba(8,8,7,0.84); margin: 0 0 14px; }
-        .origin-copy strong { color: var(--ink); font-weight: 500; }
+        .ab-hero-inner {
+          position: relative; z-index: 2;
+          max-width: 1200px; margin: 0 auto; padding: 0 48px;
+        }
+        .ab-hero-eyebrow {
+          font-family: var(--fa); font-size: 15px; color: var(--kente);
+          letter-spacing: 0.06em; margin-bottom: 32px;
+          opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+        }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
 
-        .aura { padding: 96px 0; background: #fff; }
-        .aura-layout { position:relative; z-index:2; display:grid; grid-template-columns: 0.85fr 1.15fr; gap: 44px; align-items:center; }
-        .aura-word {
-          font-family:'Bebas Neue', sans-serif;
-          font-size: clamp(70px, 12vw, 170px);
-          line-height:0.8;
-          letter-spacing: 0.38em;
+        .ab-hero-h1 {
+          font-family: var(--fd);
+          font-size: clamp(62px, 10.5vw, 158px);
+          line-height: 0.87; letter-spacing: 0.01em;
+          margin-bottom: 0;
+        }
+        .ab-hero-h1 .solid  { color: var(--ink); }
+        .ab-hero-h1 .stroke {
+          -webkit-text-stroke: 2px var(--ink);
           color: transparent;
-          -webkit-text-stroke: 1.5px rgba(8,8,7,0.84);
         }
-        .aura-text { font-size: 18px; line-height: 1.95; max-width: 640px; color: rgba(8,8,7,0.84); }
-
-        .philo { padding: 96px 0; }
-        .philo-head { position:relative; z-index:2; margin-bottom: 28px; }
-        .philo-grid { position:relative; z-index:2; display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); border:1px solid var(--line); }
-        .phi-item { padding: 28px 24px; border-right:1px solid var(--line); min-height: 220px; }
-        .phi-item:last-child { border-right:none; }
-        .phi-k { font-family:'Bebas Neue', sans-serif; font-size: 34px; letter-spacing:0.05em; line-height:0.95; margin-bottom:10px; }
-        .phi-p { font-size:14px; line-height:1.85; color: rgba(8,8,7,0.72); }
-
-        .craft { padding: 96px 0; background:#fff; }
-        .craft-grid { position:relative; z-index:2; display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
-        .craft-item { padding: 30px 18px 26px; border-right:1px solid var(--line); }
-        .craft-item:last-child { border-right:none; }
-        .craft-num { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:0.14em; color:var(--gold); }
-        .craft-name { margin-top: 8px; font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:0.04em; }
-        .craft-desc { margin-top:8px; font-size:13px; line-height:1.8; color:rgba(8,8,7,0.72); }
-
-        .vision { padding: 110px 0; }
-        .vision-core { position:relative; z-index:2; max-width: 880px; }
-        .vision-lead { font-family:'Bebas Neue',sans-serif; font-size: clamp(52px, 8.5vw, 126px); line-height:0.86; letter-spacing:0.02em; }
-        .vision-body { margin-top:18px; font-size:17px; line-height:1.95; color:rgba(8,8,7,0.84); }
-
-        .founder { padding: 90px 0; background:#fff; }
-        .founder-wrap { position:relative; z-index:2; display:grid; grid-template-columns: 1fr 1.3fr; gap: 42px; align-items:start; }
-        .founder-tag { font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:rgba(8,8,7,0.5); }
-        .founder-name { margin-top:4px; font-family:'Bebas Neue', sans-serif; font-size: clamp(44px, 6vw, 86px); letter-spacing:0.04em; line-height:0.9; }
-        .founder-story p { font-size:15px; line-height:1.9; color:rgba(8,8,7,0.82); margin:0 0 12px; }
-
-        .closing { padding: 120px 0 140px; text-align:center; }
-        .closing-text { position:relative; z-index:2; font-family:'Bebas Neue', sans-serif; font-size: clamp(54px, 9.2vw, 146px); line-height:0.84; letter-spacing:0.03em; }
-        .closing-sub { position:relative; z-index:2; margin-top:16px; font-family:'Caveat',cursive; font-size: clamp(20px, 2.2vw, 32px); color:rgba(8,8,7,0.54); }
-
-        @media (max-width: 980px) {
-          .origin-grid, .aura-layout, .founder-wrap { grid-template-columns: 1fr; }
-          .philo-grid, .craft-grid { grid-template-columns: 1fr 1fr; }
-          .phi-item:nth-child(2), .craft-item:nth-child(2) { border-right: none; }
-          .phi-item:nth-child(-n+2), .craft-item:nth-child(-n+2) { border-bottom:1px solid var(--line); }
+        .ab-hero-sub {
+          font-family: var(--fa); font-size: clamp(18px, 2.5vw, 26px);
+          color: rgba(11,11,10,0.46); line-height: 1.55;
+          max-width: 560px; margin-top: 36px;
+          opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.6s forwards;
         }
-        @media (max-width: 640px) {
-          .w { padding: 0 20px; }
-          .philo-grid, .craft-grid { grid-template-columns: 1fr; }
-          .phi-item, .craft-item { border-right:none !important; border-bottom:1px solid var(--line); }
-          .phi-item:last-child, .craft-item:last-child { border-bottom:none; }
-          .hero { min-height: 72vh; }
+        .ab-hero-scroll {
+          position: absolute; bottom: 40px; left: 48px;
+          display: flex; align-items: center; gap: 12px;
+          font-family: var(--fa); font-size: 13px; color: rgba(11,11,10,0.3);
+          opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 1s forwards;
+        }
+        .ab-hero-scroll-line {
+          width: 40px; height: 1px; background: rgba(11,11,10,0.2);
+          animation: scrollPulse 2s ease-in-out infinite;
+        }
+        @keyframes scrollPulse {
+          0%,100%{transform:scaleX(1);opacity:0.5}
+          50%{transform:scaleX(1.4);opacity:1}
+        }
+
+        /* ghost watermark */
+        .ab-ghost {
+          position: absolute; pointer-events: none; user-select: none; z-index: 1;
+          font-family: var(--fd); white-space: nowrap;
+          color: transparent; letter-spacing: 0.04em;
+        }
+        .ab-ghost-1 {
+          font-size: clamp(90px,18vw,260px);
+          -webkit-text-stroke: 1px rgba(11,11,10,0.04);
+          top: 10%; right: -4%;
+          animation: ghostDrift 18s ease-in-out infinite alternate;
+        }
+        .ab-ghost-2 {
+          font-size: clamp(60px,10vw,140px);
+          -webkit-text-stroke: 1px rgba(11,11,10,0.03);
+          bottom: 8%; left: -2%;
+          animation: ghostDrift 24s ease-in-out infinite alternate-reverse;
+        }
+        @keyframes ghostDrift { from{transform:translateX(0)} to{transform:translateX(2%)} }
+
+        /* ═══ 02 — ORIGIN ═══ */
+        .ab-origin {
+          padding: 140px 0;
+          border-bottom: 1px solid var(--b);
+          position: relative; overflow: hidden;
+        }
+        .ab-origin-layout {
+          display: grid; grid-template-columns: 1fr 1.4fr;
+          gap: 100px; align-items: start;
+        }
+        .ab-origin-left { position: sticky; top: 100px; }
+        .ab-origin-tag {
+          font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+          color: var(--kente); margin-bottom: 24px;
+        }
+        .ab-origin-title {
+          font-family: var(--fd);
+          font-size: clamp(48px, 7vw, 96px);
+          line-height: 0.9; letter-spacing: 0.02em;
+        }
+        .ab-origin-title .sk {
+          -webkit-text-stroke: 1.5px var(--ink);
+          color: transparent; display: block;
+        }
+        .ab-origin-accent {
+          width: 32px; height: 2px;
+          background: var(--kente); margin-top: 32px;
+        }
+
+        .ab-origin-right { display: flex; flex-direction: column; gap: 0; }
+        .ab-origin-block {
+          padding: 36px 0;
+          border-bottom: 1px solid var(--b);
+        }
+        .ab-origin-block:first-child { padding-top: 0; }
+        .ab-origin-lead {
+          font-family: var(--fd);
+          font-size: clamp(18px, 2.5vw, 28px);
+          letter-spacing: 0.04em; color: var(--ink);
+          margin-bottom: 14px; line-height: 1.1;
+        }
+        .ab-origin-body {
+          font-size: 15px; line-height: 1.95;
+          color: rgba(11,11,10,0.58); font-weight: 300;
+        }
+        .ab-origin-body strong { color: var(--ink); font-weight: 500; }
+
+        @media(max-width:900px){
+          .ab-origin { padding: 80px 0; }
+          .ab-origin-layout { grid-template-columns: 1fr; gap: 48px; }
+          .ab-origin-left { position: static; }
+        }
+
+        /* ═══ 03 — AURA MEANING ═══ */
+        .ab-aura-s {
+          background: var(--ink);
+          position: relative; overflow: hidden;
+          border-bottom: 1px solid rgba(247,246,244,0.06);
+        }
+        .ab-aura-layout {
+          display: grid; grid-template-columns: 1fr 1fr;
+          min-height: 560px;
+        }
+        .ab-aura-left {
+          border-right: 1px solid rgba(247,246,244,0.07);
+          display: flex; align-items: center; justify-content: center;
+          padding: 80px 64px;
+          position: relative;
+        }
+        .ab-aura-word {
+          font-family: var(--fd);
+          font-size: clamp(64px, 11vw, 160px);
+          letter-spacing: 0.3em;
+          -webkit-text-stroke: 1.5px rgba(247,246,244,0.2);
+          color: transparent;
+          line-height: 1; text-align: center;
+          animation: auraGlow 4s ease-in-out infinite alternate;
+        }
+        @keyframes auraGlow {
+          from { -webkit-text-stroke-color: rgba(247,246,244,0.15); }
+          to   { -webkit-text-stroke-color: rgba(200,80,42,0.55); }
+        }
+        .ab-aura-word-solid {
+          position: absolute;
+          font-family: var(--fd);
+          font-size: clamp(64px, 11vw, 160px);
+          letter-spacing: 0.3em;
+          color: var(--cream); opacity: 0.04;
+          line-height: 1; text-align: center;
+          pointer-events: none;
+        }
+        .ab-aura-right {
+          padding: 80px 64px;
+          display: flex; flex-direction: column; justify-content: center; gap: 28px;
+        }
+        .ab-aura-tag {
+          font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+          color: var(--kente); margin-bottom: 4px;
+        }
+        .ab-aura-def {
+          font-family: var(--fd);
+          font-size: clamp(22px, 3vw, 38px);
+          letter-spacing: 0.04em; color: var(--cream);
+          line-height: 1.15;
+        }
+        .ab-aura-def .hi { color: var(--gold); }
+        .ab-aura-body {
+          font-size: 15px; line-height: 1.9;
+          color: rgba(247,246,244,0.45); font-weight: 300;
+          max-width: 420px;
+        }
+        .ab-aura-pillars { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+        .ab-aura-pill {
+          display: flex; align-items: center; gap: 10px;
+          font-family: var(--fd); font-size: 12px;
+          letter-spacing: 0.18em; text-transform: uppercase;
+          color: rgba(247,246,244,0.3);
+        }
+        .ab-aura-pill::before {
+          content: ''; width: 24px; height: 1px;
+          background: var(--kente); flex-shrink: 0;
+        }
+        @media(max-width:768px){
+          .ab-aura-layout { grid-template-columns: 1fr; }
+          .ab-aura-left { border-right: none; border-bottom: 1px solid rgba(247,246,244,0.07); padding: 60px 22px; }
+          .ab-aura-right { padding: 48px 22px; }
+        }
+
+        /* ═══ 04 — PHILOSOPHY ═══ */
+        .ab-philo-s {
+          padding: 140px 0;
+          border-bottom: 1px solid var(--b);
+          position: relative; overflow: hidden;
+        }
+        .ab-philo-head {
+          display: flex; align-items: flex-end; justify-content: space-between;
+          margin-bottom: 80px; gap: 24px;
+        }
+        .ab-philo-title {
+          font-family: var(--fd);
+          font-size: clamp(52px, 8vw, 120px);
+          line-height: 0.88; letter-spacing: 0.02em;
+        }
+        .ab-philo-title .sk {
+          -webkit-text-stroke: 1.5px var(--ink);
+          color: transparent; display: block;
+        }
+        .ab-philo-intro {
+          font-family: var(--fa); font-size: 17px;
+          color: rgba(11,11,10,0.4); max-width: 280px;
+          line-height: 1.65; text-align: right;
+          padding-bottom: 8px;
+        }
+        .ab-philo-grid {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 1px; background: var(--b);
+        }
+        .ab-philo-item {
+          background: var(--cream);
+          padding: 52px 48px;
+          position: relative; overflow: hidden;
+          transition: background 0.4s;
+          cursor: default;
+        }
+        .ab-philo-item::before {
+          content: ''; position: absolute; top: 0; left: 0; right: 0;
+          height: 0; background: rgba(200,80,42,0.04);
+          transition: height 0.5s cubic-bezier(0.4,0,0.2,1);
+        }
+        .ab-philo-item:hover::before { height: 100%; }
+        .ab-philo-item::after {
+          content: ''; position: absolute; top: 0; left: 0; width: 0; height: 2px;
+          background: var(--kente);
+          transition: width 0.55s cubic-bezier(0.77,0,0.175,1);
+        }
+        .ab-philo-item:hover::after { width: 100%; }
+        .ab-philo-num {
+          font-family: var(--fa); font-size: 12px; color: var(--kente);
+          margin-bottom: 20px; display: block;
+        }
+        .ab-philo-name {
+          font-family: var(--fd);
+          font-size: clamp(22px, 2.8vw, 38px);
+          letter-spacing: 0.04em; color: var(--ink);
+          margin-bottom: 18px; line-height: 1.05;
+        }
+        .ab-philo-body {
+          font-size: 13px; line-height: 1.9;
+          color: rgba(11,11,10,0.52); font-weight: 300;
+        }
+        @media(max-width:900px){
+          .ab-philo-s { padding: 80px 0; }
+          .ab-philo-head { flex-direction: column; }
+          .ab-philo-intro { text-align: left; }
+          .ab-philo-grid { grid-template-columns: 1fr; }
+          .ab-philo-item { padding: 36px 22px; }
+        }
+
+        /* ═══ 05 — PROCESS ═══ */
+        .ab-process-s {
+          background: var(--ink);
+          padding: 140px 0;
+          border-bottom: 1px solid rgba(247,246,244,0.06);
+          position: relative; overflow: hidden;
+        }
+        .ab-process-head { margin-bottom: 80px; }
+        .ab-process-tag {
+          font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+          color: var(--kente); margin-bottom: 18px;
+        }
+        .ab-process-title {
+          font-family: var(--fd);
+          font-size: clamp(48px, 7.5vw, 112px);
+          line-height: 0.88; letter-spacing: 0.02em; color: var(--cream);
+        }
+        .ab-process-title .sk {
+          -webkit-text-stroke: 1.5px rgba(247,246,244,0.22);
+          color: transparent; display: block;
+        }
+        .ab-process-rows { display: flex; flex-direction: column; }
+        .ab-process-row {
+          display: grid; grid-template-columns: 80px 1fr 1.4fr;
+          gap: 48px; align-items: start;
+          padding: 44px 0;
+          border-top: 1px solid rgba(247,246,244,0.07);
+          position: relative; overflow: hidden;
+          cursor: default;
+          transition: padding-left 0.35s;
+        }
+        .ab-process-row::after {
+          content: ''; position: absolute; left: 0; top: 0; width: 0; height: 1px;
+          background: linear-gradient(90deg, var(--kente), var(--gold));
+          transition: width 0.6s cubic-bezier(0.77,0,0.175,1);
+        }
+        .ab-process-row:hover::after { width: 100%; }
+        .ab-process-row:hover { padding-left: 12px; }
+        .ab-process-row:hover .ab-process-num { color: var(--gold); }
+        .ab-process-num {
+          font-family: var(--fa); font-size: 13px; color: var(--kente);
+          margin-top: 6px; transition: color 0.3s;
+        }
+        .ab-process-name {
+          font-family: var(--fd);
+          font-size: clamp(22px, 2.8vw, 40px);
+          letter-spacing: 0.05em; color: var(--cream);
+          line-height: 1;
+        }
+        .ab-process-body {
+          font-size: 13px; line-height: 1.9;
+          color: rgba(247,246,244,0.38); font-weight: 300;
+          padding-top: 6px;
+        }
+        @media(max-width:768px){
+          .ab-process-s { padding: 80px 0; }
+          .ab-process-row { grid-template-columns: 48px 1fr; gap: 16px; }
+          .ab-process-body { display: none; }
+        }
+
+        /* ═══ 06 — VISION ═══ */
+        .ab-vision-s {
+          padding: 160px 0;
+          border-bottom: 1px solid var(--b);
+          position: relative; overflow: hidden;
+          background: var(--cream);
+        }
+        .ab-vision-inner { position: relative; z-index: 1; }
+        .ab-vision-label {
+          font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+          color: var(--kente); margin-bottom: 48px;
+        }
+        .ab-vision-statement {
+          font-family: var(--fd);
+          font-size: clamp(52px, 9vw, 138px);
+          line-height: 0.87; letter-spacing: 0.01em;
+          margin-bottom: 64px;
+        }
+        .ab-vision-statement .sk {
+          -webkit-text-stroke: 2px var(--ink);
+          color: transparent; display: block;
+        }
+        .ab-vision-statement .hl { color: var(--kente); }
+        .ab-vision-cols {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 80px; border-top: 1px solid var(--b); padding-top: 64px;
+        }
+        .ab-vision-col-head {
+          font-family: var(--fd); font-size: clamp(18px, 2.2vw, 28px);
+          letter-spacing: 0.06em; margin-bottom: 16px;
+        }
+        .ab-vision-col-body {
+          font-size: 14px; line-height: 1.95;
+          color: rgba(11,11,10,0.55); font-weight: 300;
+        }
+        .ab-vision-col-body strong { color: var(--ink); font-weight: 500; }
+        .ab-vision-wm {
+          position: absolute; pointer-events: none;
+          font-family: var(--fd);
+          font-size: clamp(90px, 18vw, 280px);
+          color: transparent;
+          -webkit-text-stroke: 1px rgba(11,11,10,0.03);
+          right: -4%; bottom: -10%;
+          user-select: none; white-space: nowrap;
+        }
+        @media(max-width:768px){
+          .ab-vision-s { padding: 80px 0; }
+          .ab-vision-cols { grid-template-columns: 1fr; gap: 40px; }
+        }
+
+        /* ═══ 07 — FOUNDERS ═══ */
+        .ab-founders-s {
+          background: var(--ink);
+          padding: 140px 0;
+          border-bottom: 1px solid rgba(247,246,244,0.06);
+          position: relative; overflow: hidden;
+        }
+        .ab-founders-head { margin-bottom: 80px; }
+        .ab-founders-tag {
+          font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+          color: var(--kente); margin-bottom: 20px;
+        }
+        .ab-founders-title {
+          font-family: var(--fd);
+          font-size: clamp(44px, 6.5vw, 96px);
+          line-height: 0.9; letter-spacing: 0.02em; color: var(--cream);
+        }
+        .ab-founders-title .sk {
+          -webkit-text-stroke: 1px rgba(247,246,244,0.2);
+          color: transparent; display: block;
+        }
+        .ab-founders-grid {
+          display: grid; grid-template-columns: repeat(3, 1fr);
+          gap: 1px; background: rgba(247,246,244,0.05);
+        }
+        .ab-founder-card {
+          background: var(--ink);
+          padding: 48px 40px;
+          display: flex; flex-direction: column; gap: 0;
+          position: relative; overflow: hidden;
+          transition: background 0.4s;
+        }
+        .ab-founder-card::after {
+          content: ''; position: absolute; top: 0; left: 0; width: 0; height: 2px;
+          background: linear-gradient(90deg, var(--kente), var(--gold));
+          transition: width 0.55s cubic-bezier(0.77,0,0.175,1);
+        }
+        .ab-founder-card:hover::after { width: 100%; }
+        .ab-founder-card:hover { background: rgba(247,246,244,0.02); }
+        .ab-founder-initials {
+          font-family: var(--fd);
+          font-size: 48px; letter-spacing: 0.08em;
+          -webkit-text-stroke: 1px rgba(247,246,244,0.12);
+          color: transparent;
+          margin-bottom: 28px; line-height: 1;
+        }
+        .ab-founder-name {
+          font-family: var(--fd); font-size: 24px;
+          letter-spacing: 0.06em; color: var(--cream);
+          margin-bottom: 6px; line-height: 1;
+        }
+        .ab-founder-title {
+          font-family: var(--fa); font-size: 13px;
+          color: var(--kente); margin-bottom: 24px;
+        }
+        .ab-founder-bio {
+          font-size: 12px; line-height: 1.9;
+          color: rgba(247,246,244,0.36); font-weight: 300;
+        }
+        @media(max-width:900px){
+          .ab-founders-s { padding: 80px 0; }
+          .ab-founders-grid { grid-template-columns: 1fr; }
+          .ab-founder-card { padding: 36px 22px; }
+        }
+
+        /* ═══ 08 — CLOSING ═══ */
+        .ab-close-s {
+          padding: 160px 0;
+          background: var(--cream);
+          text-align: center;
+          position: relative; overflow: hidden;
+        }
+        .ab-close-inner { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 0 48px; }
+        .ab-close-label {
+          font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+          color: rgba(11,11,10,0.3); margin-bottom: 48px;
+        }
+        .ab-close-statement {
+          font-family: var(--fd);
+          font-size: clamp(52px, 9.5vw, 148px);
+          line-height: 0.87; letter-spacing: 0.01em;
+        }
+        .ab-close-statement .solid { color: var(--ink); }
+        .ab-close-statement .stroke {
+          -webkit-text-stroke: 2px var(--ink);
+          color: transparent;
+        }
+        .ab-close-sub {
+          font-family: var(--fa); font-size: 18px;
+          color: rgba(11,11,10,0.35); margin-top: 40px; line-height: 1.6;
+        }
+        .ab-close-wm {
+          position: absolute; pointer-events: none; z-index: 0;
+          font-family: var(--fd);
+          font-size: clamp(80px, 16vw, 220px);
+          color: transparent;
+          -webkit-text-stroke: 1px rgba(11,11,10,0.03);
+          top: 50%; left: 50%; transform: translate(-50%,-50%);
+          white-space: nowrap; user-select: none;
+        }
+        @media(max-width:768px){
+          .ab-close-s { padding: 100px 0; }
+          .ab-close-inner { padding: 0 22px; }
         }
       `}</style>
 
-      <section className="sec hero">
-        <div className="wm" style={{ top: "-12px", left: "-6px" }}>ANKARA</div>
-        <div className="wm" style={{ top: "120px", left: "-6px" }}>AURA</div>
-        <div className="w hero-inner">
-          <p className="eyebrow">About Ankara Aura</p>
-          <h1 className="statement">We don’t make clothes.<br />We build presence.</h1>
-          <p className="hook">
-            Rooted in African identity and shaped by modern restraint, Ankara Aura is where culture becomes
-            confidence — quiet, intentional, unforgettable.
+      {/* ══ KENTE TOP BAR ══ */}
+      <KenteBar height={4} />
+
+      {/* ══════════════════════════════════════════
+          01 — HERO STATEMENT
+      ══════════════════════════════════════════ */}
+      <section className="ab-hero">
+        <AnkaraPattern id="ab-hero-p" opacity={0.07} />
+        <div className="ab-ghost ab-ghost-1">AURA</div>
+        <div className="ab-ghost ab-ghost-2">ANKARA</div>
+
+        <div className="ab-hero-inner">
+          <p className="ab-hero-eyebrow">Ankara Aura — Our Story</p>
+
+          <h1 className="ab-hero-h1">
+            <div className="hw">
+              <span className={`hline solid${heroVisible ? " on d1" : ""}`}>WE DON'T</span>
+            </div>
+            <div className="hw">
+              <span className={`hline solid${heroVisible ? " on d2" : ""}`}>MAKE CLOTHES.</span>
+            </div>
+            <div className="hw">
+              <span className={`hline stroke${heroVisible ? " on d3" : ""}`}>WE BUILD PRESENCE.</span>
+            </div>
+          </h1>
+
+          <p className="ab-hero-sub">
+            Where African identity meets modern precision. Where pattern carries philosophy. Where every stitch is a statement that refuses to be ignored.
+          </p>
+        </div>
+
+        <div className="ab-hero-scroll">
+          <div className="ab-hero-scroll-line" />
+          <span>Scroll to explore</span>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          02 — ORIGIN
+      ══════════════════════════════════════════ */}
+      <section
+        ref={originR.ref as React.RefObject<HTMLElement>}
+        className={`ab-origin rv${originR.visible ? " on" : ""}`}
+      >
+        <div className="pw">
+          <div className="ab-origin-layout">
+            <div className={`ab-origin-left rv-l${originR.visible ? " on" : ""}`}>
+              <p className="ab-origin-tag child">The Origin</p>
+              <h2 className="ab-origin-title child">
+                WHERE<br />
+                <span className="sk">IT ALL</span><br />
+                BEGAN
+              </h2>
+              <div className="ab-origin-accent child" />
+            </div>
+
+            <div className={`ab-origin-right rv-r${originR.visible ? " on" : ""}`}>
+              {[
+                {
+                  lead: "Born from conviction.",
+                  body: <>
+                    Ankara Aura was not built because there was a market gap. It was built because there was a <strong>belief</strong> — that African identity, when given precision and intention, belongs on the global stage alongside any name in fashion.
+                  </>,
+                },
+                {
+                  lead: "Obsessed with detail.",
+                  body: <>
+                    This brand began with a question: <em>why does African design get reduced to colour and pattern, when it contains centuries of geometry, symbolism, and structural intelligence?</em> The answer became a brand. Every piece Ankara Aura produces is an answer to that question.
+                  </>,
+                },
+                {
+                  lead: "Not fast fashion. Never.",
+                  body: <>
+                    We don't produce to fill shelves. We produce to <strong>make a point</strong>. Limited runs. Deliberate design. Quality that outlasts the season. Ankara Aura is for the person who understands that what they wear communicates something about who they are — before they speak a single word.
+                  </>,
+                },
+                {
+                  lead: "A vision without borders.",
+                  body: <>
+                    The brand was founded in Accra. The ambition is everywhere. Ankara Aura is built to scale — not because growth is the goal, but because the message deserves the widest possible stage. <strong>Culture this powerful should not be a local secret.</strong>
+                  </>,
+                },
+              ].map((b, i) => (
+                <div key={i} className="ab-origin-block child">
+                  <p className="ab-origin-lead">{b.lead}</p>
+                  <p className="ab-origin-body">{b.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          03 — THE MEANING OF AURA
+      ══════════════════════════════════════════ */}
+      <section
+        ref={auraR.ref as React.RefObject<HTMLElement>}
+        className={`ab-aura-s rv${auraR.visible ? " on" : ""}`}
+      >
+        <KenteBar height={3} />
+        <div className="ab-aura-layout">
+          <div className="ab-aura-left">
+            <AnkaraPattern id="ab-aura-p" opacity={0.04} color="#f7f6f4" />
+            <span className="ab-aura-word-solid">AURA</span>
+            <span className="ab-aura-word">A U R A</span>
+          </div>
+          <div className={`ab-aura-right rv-r${auraR.visible ? " on" : ""}`}>
+            <p className="ab-aura-tag child">The Meaning</p>
+            <h2 className="ab-aura-def child">
+              Presence without noise.<br />
+              <span className="hi">Energy without shouting.</span><br />
+              Confidence without explanation.
+            </h2>
+            <p className="ab-aura-body child">
+              The Ankara pattern is not decoration. It is communication — a visual language developed over centuries to carry meaning, identity, and status. We take that language and translate it into garments built for the modern world. The result is something that cannot be ignored, without trying to be loud.
+            </p>
+            <div className="ab-aura-pillars child">
+              {["Rooted in African tradition","Structured for modern life","Built to carry presence","Designed for the global stage"].map(t => (
+                <span key={t} className="ab-aura-pill">{t}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <KenteBar height={3} />
+      </section>
+
+      {/* ══════════════════════════════════════════
+          04 — PHILOSOPHY
+      ══════════════════════════════════════════ */}
+      <section
+        ref={philoR.ref as React.RefObject<HTMLElement>}
+        className={`ab-philo-s rv${philoR.visible ? " on" : ""}`}
+      >
+        <div className="pw">
+          <div className="ab-philo-head">
+            <h2 className={`ab-philo-title child`}>
+              OUR<br />
+              <span className="sk">PHILOSOPHY</span>
+            </h2>
+            <p className="ab-philo-intro child">
+              Four principles. Every decision we make passes through all of them.
+            </p>
+          </div>
+          <div className="ab-philo-grid">
+            {PHILOSOPHY.map((p, i) => (
+              <div key={p.title} className={`ab-philo-item child`} style={{ transitionDelay: `${i * 0.1}s` }}>
+                <span className="ab-philo-num">0{i + 1}</span>
+                <h3 className="ab-philo-name">{p.title}</h3>
+                <p className="ab-philo-body">{p.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          05 — CRAFT & PROCESS
+      ══════════════════════════════════════════ */}
+      <section
+        ref={processR.ref as React.RefObject<HTMLElement>}
+        className={`ab-process-s rv${processR.visible ? " on" : ""}`}
+      >
+        <AnkaraPattern id="ab-proc-p" opacity={0.04} color="#f7f6f4" />
+        <div className="pw" style={{ position: "relative", zIndex: 1 }}>
+          <div className="ab-process-head">
+            <p className="ab-process-tag child">Craft & Process</p>
+            <h2 className="ab-process-title child">
+              HOW IT<br />
+              <span className="sk">IS MADE</span>
+            </h2>
+          </div>
+          <div className="ab-process-rows">
+            {PROCESS.map((p, i) => (
+              <div key={p.num} className={`ab-process-row child`} style={{ transitionDelay: `${i * 0.12}s` }}>
+                <span className="ab-process-num">{p.num}</span>
+                <span className="ab-process-name">{p.name}</span>
+                <p className="ab-process-body">{p.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          06 — THE VISION
+      ══════════════════════════════════════════ */}
+      <section
+        ref={visionR.ref as React.RefObject<HTMLElement>}
+        className={`ab-vision-s rv${visionR.visible ? " on" : ""}`}
+      >
+        <div className="ab-vision-wm">LEGACY</div>
+        <div className="pw ab-vision-inner">
+          <p className="ab-vision-label child">The Vision</p>
+          <h2 className="ab-vision-statement child">
+            THIS IS NOT<br />A DROP.
+            <span className="sk">IT IS A</span>
+            <span className="hl">FOUNDATION.</span>
+          </h2>
+          <div className="ab-vision-cols">
+            {[
+              {
+                head: "Elevating African Design",
+                body: <>Ankara Aura is not building a clothing brand. It is building <strong>proof</strong> — that African design, when given the resources, discipline, and platform it deserves, can compete with and surpass any global fashion house. Every piece we release advances that argument.</>,
+              },
+              {
+                head: "Building for Legacy",
+                body: <>We are not here for a season. We are here to construct a cultural institution — a brand that exists in thirty years with the same values it was built on. <strong>The name, the pattern, the standard</strong> — these are not trends. They are infrastructure.</>,
+              },
+            ].map(c => (
+              <div key={c.head} className="child">
+                <h3 className="ab-vision-col-head">{c.head}</h3>
+                <p className="ab-vision-col-body">{c.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          07 — FOUNDERS
+      ══════════════════════════════════════════ */}
+      <section
+        ref={founderR.ref as React.RefObject<HTMLElement>}
+        className={`ab-founders-s rv${founderR.visible ? " on" : ""}`}
+      >
+        <div className="pw" style={{ position: "relative", zIndex: 1 }}>
+          <div className="ab-founders-head">
+            <p className="ab-founders-tag child">The People</p>
+            <h2 className="ab-founders-title child">
+              THE ONES<br />
+              <span className="sk">WHO BUILT IT</span>
+            </h2>
+          </div>
+          <div className="ab-founders-grid">
+            {FOUNDERS.map((f, i) => (
+              <div key={f.name} className={`ab-founder-card child`} style={{ transitionDelay: `${i * 0.14}s` }}>
+                <span className="ab-founder-initials">
+                  {f.name.split(" ").map(n => n[0]).join("")}
+                </span>
+                <h3 className="ab-founder-name">{f.name}</h3>
+                <p className="ab-founder-title">{f.title}</p>
+                <p className="ab-founder-bio">{f.bio}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          08 — CLOSING STATEMENT
+      ══════════════════════════════════════════ */}
+      <section
+        ref={closeR.ref as React.RefObject<HTMLElement>}
+        className={`ab-close-s rv${closeR.visible ? " on" : ""}`}
+      >
+        <AnkaraPattern id="ab-close-p" opacity={0.06} />
+        <div className="ab-close-wm">AURA</div>
+        <div className="ab-close-inner">
+          <p className="ab-close-label child">Ankara Aura</p>
+          <div className="ab-close-statement">
+            <div className="hw child"><span className="hline on d1 solid">WEAR CULTURE.</span></div>
+            <div className="hw child"><span className="hline on d2 stroke">CARRY PRESENCE.</span></div>
+          </div>
+          <p className="ab-close-sub child">
+            Crafted in Accra. Built for the world.
           </p>
         </div>
       </section>
 
-      <section className="sec origin">
-        <div className="wm" style={{ top: "-8px", right: "-10px" }}>ORIGIN</div>
-        <div className="w origin-grid">
-          <h2 className="sec-title">Ankara Aura was born from the belief that African identity deserves a global stage.</h2>
-          <div className="origin-copy">
-            <p>
-              The brand began with an obsession: <strong>every detail must carry meaning</strong>. From typography to
-              textile placement, from silhouette to finish, each decision is deliberate. Nothing accidental. Nothing noisy.
-            </p>
-            <p>
-              From student ambition to founder execution, <strong>Eldwin Asante</strong> shaped Ankara Aura with one
-              mission — to build a house where African design is not reduced to trend, but elevated to standard.
-            </p>
-            <p>
-              Together with co-founders <strong>James Raynolds</strong> and <strong>Kelvin Baidoo</strong>, the vision became
-              bigger than garments. This is anti-fast fashion. This is precision, culture, and long-term value.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="sec aura">
-        <div className="w aura-layout">
-          <div className="aura-word">A U R A</div>
-          <p className="aura-text">
-            Aura is presence without noise. Energy without shouting. Confidence without explanation. In African patterns,
-            every motif carries history. In modern structure, every line carries discipline. Ankara Aura lives between both —
-            cultural depth and contemporary clarity.
-          </p>
-        </div>
-      </section>
-
-      <section className="sec philo">
-        <div className="w">
-          <div className="philo-head">
-            <h2 className="sec-title" style={{ fontSize: "clamp(56px, 8.2vw, 118px)" }}>Our Philosophy</h2>
-          </div>
-          <div className="philo-grid">
-            <article className="phi-item">
-              <h3 className="phi-k">Culture is Power</h3>
-              <p className="phi-p">We design from identity first. Every piece carries heritage with authority, not nostalgia.</p>
-            </article>
-            <article className="phi-item">
-              <h3 className="phi-k">Simplicity is Luxury</h3>
-              <p className="phi-p">Restraint is our signature. Clean forms, controlled palettes, and intentional contrast.</p>
-            </article>
-            <article className="phi-item">
-              <h3 className="phi-k">Details Define Class</h3>
-              <p className="phi-p">Construction, finishing, and presentation are treated as one complete language.</p>
-            </article>
-            <article className="phi-item">
-              <h3 className="phi-k">Identity is Global</h3>
-              <p className="phi-p">African design is not local potential. It is global excellence, ready for any stage.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="sec craft">
-        <div className="w">
-          <h2 className="sec-title" style={{ fontSize: "clamp(56px, 8.2vw, 118px)", marginBottom: "20px" }}>Craft & Process</h2>
-          <div className="craft-grid">
-            <article className="craft-item">
-              <div className="craft-num">01</div>
-              <h3 className="craft-name">Design Sketch</h3>
-              <p className="craft-desc">Concepts are developed through editorial silhouette studies before final line work.</p>
-            </article>
-            <article className="craft-item">
-              <div className="craft-num">02</div>
-              <h3 className="craft-name">Fabric Selection</h3>
-              <p className="craft-desc">Pattern scale, texture, and color weight are selected to preserve cultural intent.</p>
-            </article>
-            <article className="craft-item">
-              <div className="craft-num">03</div>
-              <h3 className="craft-name">Precision Finishing</h3>
-              <p className="craft-desc">Cuts, seams, and trims are tuned for structure, comfort, and visual confidence.</p>
-            </article>
-            <article className="craft-item">
-              <div className="craft-num">04</div>
-              <h3 className="craft-name">Packaging Experience</h3>
-              <p className="craft-desc">Every delivery is presented as ceremony — refined, collectible, and unmistakably premium.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="sec vision">
-        <div className="wm" style={{ bottom: "-24px", right: "-6px" }}>VISION</div>
-        <div className="w">
-          <div className="vision-core">
-            <h2 className="vision-lead">This is not a drop.<br />It is a foundation.</h2>
-            <p className="vision-body">
-              We are building beyond collections. Ankara Aura is designed for legacy: elevating African design globally,
-              creating scalable systems around fashion, and shaping a long-term cultural brand that outlives trends.
-              The work is bigger than product. It is architecture for identity, commerce, and impact.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="sec founder">
-        <div className="w founder-wrap">
-          <div>
-            <div className="founder-tag">Founder & Creative Director</div>
-            <h3 className="founder-name">Eldwin Asante</h3>
-          </div>
-          <div className="founder-story">
-            <p>
-              Eldwin leads Ankara Aura with disciplined creative direction — balancing cultural authenticity with modern
-              luxury language.
-            </p>
-            <p>
-              Alongside co-founders James Raynolds and Kelvin Baidoo, he is shaping a brand model where African design,
-              premium craft, and global relevance grow together.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="sec closing">
-        <div className="w">
-          <h2 className="closing-text">Wear Culture.<br />Carry Presence.</h2>
-          <p className="closing-sub">Ankara Aura</p>
-        </div>
-      </section>
-    </div>
+      <KenteBar height={4} />
+    </>
   );
 }
