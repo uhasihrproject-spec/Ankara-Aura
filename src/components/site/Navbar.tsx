@@ -50,14 +50,17 @@ export default function Navbar() {
   // Use shared cart context
   const { items: cartItems, removeItem, updateQty, totalQty, totalPrice, wishlist, wishlistCount, removeFromWishlist } = useCart();
 
-  /* scroll: mark scrolled + kente strip on scroll up */
+  /* scroll: full nav on scroll up, kente strip when scrolling down */
   useEffect(() => {
+    lastY.current = window.scrollY;
+
     const onScroll = () => {
       const y = window.scrollY;
       setScrolled(y > 12);
-      setShowKenteStrip(y > 90 && y < lastY.current);
+      setShowKenteStrip(y > 90 && y > lastY.current);
       lastY.current = y;
     };
+
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
