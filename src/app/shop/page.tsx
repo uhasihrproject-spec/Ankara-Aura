@@ -106,6 +106,7 @@ export default function ShopPage() {
   const [animating,   setAnimating]   = useState(false);
   const [addedSlug,   setAddedSlug]   = useState<string | null>(null);
   const [filter,      setFilter]      = useState("All");
+  const [query,       setQuery]       = useState("");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { addToCart } = useCart();
 
@@ -154,9 +155,13 @@ export default function ShopPage() {
   };
 
   const tags = ["All", ...Array.from(new Set(PRODUCTS.flatMap(p => p.tags)))];
-  const filteredProducts = filter === "All"
-    ? PRODUCTS
-    : PRODUCTS.filter(p => p.tags.includes(filter));
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredProducts = PRODUCTS.filter((p) => {
+    const matchesTag = filter === "All" || p.tags.includes(filter);
+    if (!normalizedQuery) return matchesTag;
+    const haystack = `${p.name} ${p.desc} ${p.tags.join(" ")}`.toLowerCase();
+    return matchesTag && haystack.includes(normalizedQuery);
+  });
 
   return (
     <>
@@ -403,6 +408,45 @@ export default function ShopPage() {
         .filter-pills {
           display: flex; gap: 8px; flex-wrap: wrap;
         }
+        .shop-search {
+          min-width: min(320px, 100%);
+          border: 1px solid var(--border);
+          background: #fff;
+          height: 38px;
+          padding: 0 12px;
+          font-size: 12px;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: rgba(8,8,7,0.72);
+        }
+        .shop-search-wrap {
+          position: relative;
+          min-width: min(320px, 100%);
+        }
+        .shop-search-wrap .shop-search {
+          width: 100%;
+          padding-right: 36px;
+        }
+        .shop-search-clear {
+          position: absolute;
+          right: 2px;
+          top: 2px;
+          width: 34px;
+          height: 34px;
+          border: none;
+          background: transparent;
+          color: rgba(8,8,7,0.45);
+          font-size: 18px;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+        .shop-search-clear:hover {
+          color: rgba(8,8,7,0.9);
+        }
+        .shop-search:focus {
+          outline: none;
+          border-color: var(--ink);
+        }
         .pill {
           font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
           padding: 7px 16px; border: 1px solid var(--border);
@@ -603,21 +647,48 @@ export default function ShopPage() {
           <div className="section-head">
             <div>
               <div className="section-title">All Pieces</div>
-              <div className="section-sub">{PRODUCTS.length} pieces available</div>
+              <div className="section-sub">{filteredProducts.length} pieces available</div>
             </div>
-            <div className="filter-pills">
-              {tags.map(t => (
-                <button
-                  key={t}
-                  className={`pill${filter === t ? " active" : ""}`}
-                  onClick={() => setFilter(t)}
-                >
-                  {t}
-                </button>
-              ))}
+            <div style={{ display: "grid", gap: "10px", justifyItems: "end" }}>
+              <div className="shop-search-wrap">
+                <input
+                  className="shop-search"
+                  type="search"
+                  placeholder="Search pieces"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  aria-label="Search products"
+                />
+                {query && (
+                  <button
+                    className="shop-search-clear"
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => setQuery("")}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <div className="filter-pills">
+                {tags.map(t => (
+                  <button
+                    key={t}
+                    className={`pill${filter === t ? " active" : ""}`}
+                    onClick={() => setFilter(t)}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
+          {filteredProducts.length === 0 && (
+            <div style={{ padding: "28px 0", color: "rgba(8,8,7,0.5)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "11px" }}>
+              No pieces match your search.
+            </div>
+          )}
           <div className="products-grid">
             {filteredProducts.map((product) => (
               <Link
