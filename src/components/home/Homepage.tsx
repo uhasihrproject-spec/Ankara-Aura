@@ -27,7 +27,7 @@ import { getFeaturedProducts, COLLECTIONS } from "@/lib/products";
 import type { Product } from "@/lib/products";
 
 /* ─── INTERSECTION OBSERVER HOOK ─── */
-function useReveal(threshold = 0.1) {
+function useReveal(threshold = 0.1): [React.RefObject<HTMLElement>, boolean] {
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -45,13 +45,13 @@ function useReveal(threshold = 0.1) {
     obs.observe(el);
     return () => obs.disconnect();
   }, [threshold]);
-  return { ref, visible };
+  return [ref as React.RefObject<HTMLElement>, visible];
 }
 
 /* ─── COUNT-UP ─── */
 function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
   const [val, setVal] = useState(0);
-  const { ref, visible } = useReveal(0.3);
+  const [ref, visible] = useReveal(0.3);
   useEffect(() => {
     if (!visible) return;
     let start = 0;
@@ -107,7 +107,7 @@ function Marquee({
 /* ─── COLLECTIONS SECTION ─── */
 function CollectionsSection() {
   const [active, setActive] = useState(0);
-  const { ref, visible } = useReveal(0.08);
+  const [ref, visible] = useReveal(0.08);
   const count = COLLECTIONS.length;
 
   useEffect(() => {
@@ -286,21 +286,22 @@ function FeaturedTile({
 export default function HomePage() {
   const featured = getFeaturedProducts();
 
-  const statsR    = useReveal(0.2);
-  const quoteR    = useReveal(0.15);
-  const dropR     = useReveal(0.08);
-  const storyR    = useReveal(0.08);
-  const processR  = useReveal(0.1);
-  const quote2R   = useReveal(0.15);
-  const craftR    = useReveal(0.08);
-  const lookR     = useReveal(0.1);
-  const expR      = useReveal(0.08);
-  const pressR    = useReveal(0.1);
-  const testiR    = useReveal(0.15);
-  const newsR     = useReveal(0.12);
+  const [statsRef, statsVisible] = useReveal(0.2);
+  const [quoteRef, quoteVisible] = useReveal(0.15);
+  const [dropRef, dropVisible] = useReveal(0.08);
+  const [storyRef, storyVisible] = useReveal(0.08);
+  const [processRef, processVisible] = useReveal(0.1);
+  const [quote2Ref, quote2Visible] = useReveal(0.15);
+  const [craftRef, craftVisible] = useReveal(0.08);
+  const [lookSectionRef, lookSectionVisible] = useReveal(0.1);
+  const [expRef, expVisible] = useReveal(0.08);
+  const [pressRef, pressVisible] = useReveal(0.1);
+  const [testiRef, testiVisible] = useReveal(0.15);
+  const [newsRef, newsVisible] = useReveal(0.12);
 
   const [email, setEmail]   = useState("");
   const [subbed, setSubbed] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
   const [testiIdx, setTestiIdx] = useState(0);
 
   const testimonials = [
@@ -317,7 +318,12 @@ export default function HomePage() {
   const handleSub = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (email.trim()) setSubbed(true);
+      if (!email.trim()) return;
+      setSubLoading(true);
+      setTimeout(() => {
+        setSubbed(true);
+        setSubLoading(false);
+      }, 700);
     },
     [email]
   );
@@ -1759,8 +1765,8 @@ export default function HomePage() {
           02 — STATS BAR
       ══════════════════════════════════════════ */}
       <section
-        ref={statsR.ref as React.RefObject<HTMLElement>}
-        className={`s stats-s${statsR.visible ? " in" : ""}`}
+        ref={statsRef}
+        className={`s stats-s${statsVisible ? " in" : ""}`}
       >
         <div className="page-w">
           <div className="stats-grid">
@@ -1791,8 +1797,8 @@ export default function HomePage() {
           04 — CULTURE QUOTE (dark)
       ══════════════════════════════════════════ */}
       <section
-        ref={quoteR.ref as React.RefObject<HTMLElement>}
-        className={`s quote-s${quoteR.visible ? " in" : ""}`}
+        ref={quoteRef}
+        className={`s quote-s${quoteVisible ? " in" : ""}`}
       >
         <div className="wm wm-quote" aria-hidden>AURA</div>
         <div className="quote-stripes-top" aria-hidden />
@@ -1812,8 +1818,8 @@ export default function HomePage() {
           05 — THE DROP (dark editorial)
       ══════════════════════════════════════════ */}
       <section
-        ref={dropR.ref as React.RefObject<HTMLElement>}
-        className={`s drop-s${dropR.visible ? " in" : ""}`}
+        ref={dropRef}
+        className={`s drop-s${dropVisible ? " in" : ""}`}
       >
         {/* ankara pattern bg */}
         <svg className="drop-pattern" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -1880,8 +1886,8 @@ export default function HomePage() {
           06 — BRAND STORY
       ══════════════════════════════════════════ */}
       <section
-        ref={storyR.ref as React.RefObject<HTMLElement>}
-        className={`s story-s${storyR.visible ? " in" : ""}`}
+        ref={storyRef}
+        className={`s story-s${storyVisible ? " in" : ""}`}
       >
         <div className="wm wm-story" aria-hidden>ANKARA</div>
         <div className="page-w">
@@ -1925,8 +1931,8 @@ export default function HomePage() {
           07 — PROCESS STRIP (dark)
       ══════════════════════════════════════════ */}
       <section
-        ref={processR.ref as React.RefObject<HTMLElement>}
-        className={`s process-s${processR.visible ? " in" : ""}`}
+        ref={processRef}
+        className={`s process-s${processVisible ? " in" : ""}`}
       >
         <div className="process-row">
           {[
@@ -1948,8 +1954,8 @@ export default function HomePage() {
           08 — SECOND QUOTE (editorial, light)
       ══════════════════════════════════════════ */}
       <section
-        ref={quote2R.ref as React.RefObject<HTMLElement>}
-        className={`s quote2-s${quote2R.visible ? " in" : ""}`}
+        ref={quote2Ref}
+        className={`s quote2-s${quote2Visible ? " in" : ""}`}
       >
         <div className="wm wm-q2" aria-hidden>WORN</div>
         <div className="quote2-inner">
@@ -1969,8 +1975,8 @@ export default function HomePage() {
           09 — CRAFTSMANSHIP
       ══════════════════════════════════════════ */}
       <section
-        ref={craftR.ref as React.RefObject<HTMLElement>}
-        className={`s craft-s${craftR.visible ? " in" : ""}`}
+        ref={craftRef}
+        className={`s craft-s${craftVisible ? " in" : ""}`}
       >
         <div className="wm wm-craft" aria-hidden>CRAFT</div>
         <div className="page-w">
@@ -2007,8 +2013,8 @@ export default function HomePage() {
           10 — LOOKBOOK PREVIEW
       ══════════════════════════════════════════ */}
       <section
-        ref={lookR.ref as React.RefObject<HTMLElement>}
-        className={`s look-s${lookR.visible ? " in" : ""}`}
+        ref={lookSectionRef}
+        className={`s look-s${lookSectionVisible ? " in" : ""}`}
       >
         <div className="look-head">
           <div>
@@ -2060,8 +2066,8 @@ export default function HomePage() {
           11 — SIGNATURE EXPERIENCE (dark)
       ══════════════════════════════════════════ */}
       <section
-        ref={expR.ref as React.RefObject<HTMLElement>}
-        className={`s exp-s${expR.visible ? " in" : ""}`}
+        ref={expRef}
+        className={`s exp-s${expVisible ? " in" : ""}`}
       >
         <div className="wm wm-exp" aria-hidden>AURA</div>
         <div className="page-w">
@@ -2104,8 +2110,8 @@ export default function HomePage() {
           12 — PRESS / AS SEEN ON
       ══════════════════════════════════════════ */}
       <section
-        ref={pressR.ref as React.RefObject<HTMLElement>}
-        className={`s press-s${pressR.visible ? " in" : ""}`}
+        ref={pressRef}
+        className={`s press-s${pressVisible ? " in" : ""}`}
       >
         <div className="wm wm-press" aria-hidden>PRESS</div>
         <div className="page-w">
@@ -2127,8 +2133,8 @@ export default function HomePage() {
           13 — TESTIMONIALS
       ══════════════════════════════════════════ */}
       <section
-        ref={testiR.ref as React.RefObject<HTMLElement>}
-        className={`s testi-s${testiR.visible ? " in" : ""}`}
+        ref={testiRef}
+        className={`s testi-s${testiVisible ? " in" : ""}`}
       >
         <div className="wm wm-testi" aria-hidden>WORN</div>
         <div className="testi-inner">
@@ -2159,8 +2165,8 @@ export default function HomePage() {
           14 — NEWSLETTER
       ══════════════════════════════════════════ */}
       <section
-        ref={newsR.ref as React.RefObject<HTMLElement>}
-        className={`s news-s${newsR.visible ? " in" : ""}`}
+        ref={newsRef}
+        className={`s news-s${newsVisible ? " in" : ""}`}
       >
         <div className="wm wm-newsletter" aria-hidden>CIRCLE</div>
         <div className="page-w">
@@ -2190,7 +2196,7 @@ export default function HomePage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
-                    <button type="submit" className="news-btn">Join</button>
+                    <button type="submit" className="news-btn" disabled={subLoading} aria-busy={subLoading}>{subLoading ? "Joining..." : "Join"}</button>
                   </div>
                 </form>
               )}

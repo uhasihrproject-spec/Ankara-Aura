@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import type { MouseEventHandler, CSSProperties } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 
@@ -13,7 +14,7 @@ const links = [
 ];
 
 /* ─── SplitLink — each nav word splits on hover ─── */
-function SplitLink({ href, label, onClick }) {
+function SplitLink({ href, label, onClick }: { href: string; label: string; onClick?: MouseEventHandler<HTMLAnchorElement> }) {
   return (
     <Link href={href} className="split-link" onClick={onClick}>
       <span className="split-top">{label}</span>
@@ -29,28 +30,23 @@ export default function Navbar() {
   const [scrolled,   setScrolled]   = useState(false);
   const [collapsed,  setCollapsed]  = useState(false);
   const [cartPulse,  setCartPulse]  = useState(false);
-  const [particles,  setParticles]  = useState([]);
+  const [particles]  = useState(() => Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: 2 + Math.random() * 3,
+    delay: Math.random() * 1.6,
+    dur: 1 + Math.random() * 1.2,
+    color: ["#c8502a", "#d4a843", "#1a3a5c", "#8b2635", "#2d6a4f"][i % 5],
+    dx: (Math.random() - 0.5) * 70,
+    dy: (Math.random() - 0.5) * 70,
+  })));
   const [logoSpin,   setLogoSpin]   = useState(false);
-  const cartPanelRef = useRef(null);
-  const lastScroll   = useRef(null);
+  const cartPanelRef = useRef<HTMLDivElement | null>(null);
+  const lastScroll   = useRef(0);
 
   // Use shared cart context
   const { items: cartItems, removeItem, updateQty, totalQty, totalPrice } = useCart();
-
-  /* generate cart-button particles once */
-  useEffect(() => {
-    setParticles(Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: 2 + Math.random() * 3,
-      delay: Math.random() * 1.6,
-      dur: 1 + Math.random() * 1.2,
-      color: ["#c8502a","#d4a843","#1a3a5c","#8b2635","#2d6a4f"][i % 5],
-      dx: (Math.random() - 0.5) * 70,
-      dy: (Math.random() - 0.5) * 70,
-    })));
-  }, []);
 
   /* scroll: mark scrolled & collapsed */
   useEffect(() => {
@@ -73,8 +69,8 @@ export default function Navbar() {
   /* close cart on outside click */
   useEffect(() => {
     if (!cartOpen) return;
-    const h = (e) => {
-      if (cartPanelRef.current && !cartPanelRef.current.contains(e.target)) setCartOpen(false);
+    const h = (e: MouseEvent) => {
+      if (cartPanelRef.current && e.target instanceof Node && !cartPanelRef.current.contains(e.target)) setCartOpen(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
@@ -858,7 +854,7 @@ export default function Navbar() {
           {/* LOGO */}
           <Link href="/" className="nav-logo" onMouseEnter={handleLogoHover}>
             <div className="logo-mark">
-              <div className="logo-ring" />
+              <div className={`logo-ring${logoSpin ? " spinning" : ""}`} />
               <div className="logo-mark-inner">
                 <span className="logo-mark-letters">AA</span>
               </div>
@@ -872,7 +868,7 @@ export default function Navbar() {
           {/* DESKTOP LINKS */}
           <nav aria-label="Main navigation">
             <ul className="nav-links">
-              {links.map((l, i) => (
+              {links.map((l) => (
                 <li key={l.href} className="nav-link-item">
                   <SplitLink href={l.href} label={l.label} />
                 </li>
@@ -899,11 +895,11 @@ export default function Navbar() {
                       left: `${p.x}%`, top: `${p.y}%`,
                       width: p.size, height: p.size,
                       background: p.color,
-                      "--delay": `${p.delay}s`,
-                      "--dur": `${p.dur}s`,
-                      "--dx": `${p.dx}px`,
-                      "--dy": `${p.dy}px`,
-                    }} />
+                      ["--delay" as string]: `${p.delay}s`,
+                      ["--dur" as string]: `${p.dur}s`,
+                      ["--dx" as string]: `${p.dx}px`,
+                      ["--dy" as string]: `${p.dy}px`,
+                    } as CSSProperties} />
                   ))}
                 </div>
                 <svg className="cart-icon" viewBox="0 0 24 24">

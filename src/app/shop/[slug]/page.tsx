@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { PRODUCTS, getProduct } from "@/lib/products";
+import type { Product } from "@/lib/products";
 
 /* ── reuse ProductVisual from shop page (or import it) ── */
-function ProductVisual({ product, size = 420 }) {
-  const colors = {
+function ProductVisual({ product, size = 420 }: { product: Product; size?: number }) {
+  const colors: Record<string, { bg: string; accent: string; stripe: string }> = {
     "ankara-oversized-tee": { bg: "#1a1a1a", accent: "#c8502a", stripe: "#d4a843" },
     "kente-blazer":          { bg: "#0d1f12", accent: "#2d6a4f", stripe: "#c8502a" },
     "mono-cargo-pant":       { bg: "#0b0b0a", accent: "#333",    stripe: "#555"    },
@@ -62,22 +64,21 @@ function AnkaraPattern() {
   );
 }
 
-export default function ProductPage({ params }) {
-  const slug    = params?.slug;
+export default function ProductPage() {
+  const params = useParams<{ slug: string }>();
+  const slug = params?.slug;
   const product = getProduct(slug);
   const { addToCart, items } = useCart();
 
-  const [selectedSize,  setSelectedSize]  = useState(null);
+  const [selectedSize,  setSelectedSize]  = useState<string | null>(null);
   const [qty,           setQty]           = useState(1);
   const [activeView,    setActiveView]    = useState(0);
   const [added,         setAdded]         = useState(false);
   const [sizeError,     setSizeError]     = useState(false);
   const [zoomed,        setZoomed]        = useState(false);
+  const [adding,        setAdding]        = useState(false);
 
   const inCart = items.some(i => i.slug === slug && i.size === selectedSize);
-
-  // related products
-  const related = PRODUCTS.filter(p => p.slug !== slug && p.tags.some(t => product?.tags.includes(t))).slice(0, 3);
 
   if (!product) {
     return (
@@ -87,18 +88,24 @@ export default function ProductPage({ params }) {
     );
   }
 
+  const related = PRODUCTS.filter((p) => p.slug !== slug && p.tags.some((t) => product.tags.includes(t))).slice(0, 3);
+
   const handleAddToCart = () => {
     if (!selectedSize) { setSizeError(true); setTimeout(() => setSizeError(false), 800); return; }
-    addToCart({
-      slug:    product.slug,
-      name:    product.name,
-      price:   product.price,
-      size:    selectedSize,
-      qty,
-      color:   "#c8502a", // fallback
-    });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2200);
+    setAdding(true);
+    setTimeout(() => {
+      addToCart({
+        slug:    product.slug,
+        name:    product.name,
+        price:   product.price,
+        size:    selectedSize,
+        qty,
+        color:   "#c8502a", // fallback
+      });
+      setAdding(false);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2200);
+    }, 350);
   };
 
   return (
@@ -285,6 +292,7 @@ export default function ProductPage({ params }) {
         .atc-btn:hover::before { transform: scaleX(1); }
         .atc-btn span { position: relative; z-index: 1; }
         .atc-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(200,80,42,0.25); }
+        .atc-btn:disabled { opacity: 0.8; cursor: wait; transform: none; box-shadow: none; }
         .atc-btn.added { background: var(--forest); }
         .atc-btn.added::before { display: none; }
         .atc-btn.size-error { background: #c0392b; }
@@ -468,12 +476,15 @@ export default function ProductPage({ params }) {
 
             {/* add to cart */}
             <button
+              disabled={adding}
               className={`atc-btn${added ? " added" : ""}${sizeError ? " size-error" : ""}`}
               onClick={handleAddToCart}
             >
               <span>
                 {sizeError
                   ? "← Select a size first"
+                  : adding
+                  ? "Adding..."
                   : added
                   ? "✓ Added to Cart"
                   : inCart
@@ -531,7 +542,7 @@ export default function ProductPage({ params }) {
   );
 }
 
-function AccordionItem({ label, body }) {
+function AccordionItem({ label, body }: { label: string; body: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="accord-item">
