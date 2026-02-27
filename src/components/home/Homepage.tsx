@@ -1044,11 +1044,21 @@ export default function HomePage() {
           font-family: var(--fa); font-size: 15px; color: var(--gold);
         }
         .ptile-cta {
-          display: flex; align-items: center; gap: 8px;
-          font-size: 9px; letter-spacing: 0.22em;
-          text-transform: uppercase; color: rgba(247,246,244,0.7);
-          border-bottom: 1px solid rgba(247,246,244,0.3);
-          padding-bottom: 2px;
+          display: inline-flex; align-items: center; gap: 8px;
+          font-size: 10px; letter-spacing: 0.16em;
+          text-transform: uppercase;
+          background: var(--ink);
+          color: var(--cream);
+          border: 1px solid rgba(247,246,244,0.6);
+          padding: 8px 12px;
+          text-decoration: none;
+          cursor: pointer;
+          transition: background 0.2s, color 0.2s, transform 0.18s;
+        }
+        .ptile-cta:hover {
+          background: transparent;
+          color: var(--cream);
+          transform: translateY(-1px);
         }
 
         /* drop footer */

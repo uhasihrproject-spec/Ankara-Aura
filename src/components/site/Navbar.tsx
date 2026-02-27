@@ -27,7 +27,9 @@ function SplitLink({ href, label, onClick }: { href: string; label: string; onCl
 export default function Navbar() {
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [cartOpen,   setCartOpen]   = useState(false);
+  const [wishOpen,   setWishOpen]   = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
+  const [showKenteStrip, setShowKenteStrip] = useState(false);
   const [cartPulse,  setCartPulse]  = useState(false);
   const [particles]  = useState(() => Array.from({ length: 20 }, (_, i) => ({
     id: i,
@@ -42,14 +44,19 @@ export default function Navbar() {
   })));
   const [logoSpin,   setLogoSpin]   = useState(false);
   const cartPanelRef = useRef<HTMLDivElement | null>(null);
+  const wishPanelRef = useRef<HTMLDivElement | null>(null);
+  const lastY = useRef(0);
 
   // Use shared cart context
-  const { items: cartItems, removeItem, updateQty, totalQty, totalPrice, wishlistCount } = useCart();
+  const { items: cartItems, removeItem, updateQty, totalQty, totalPrice, wishlist, wishlistCount, removeFromWishlist } = useCart();
 
-  /* scroll: mark scrolled */
+  /* scroll: mark scrolled + kente strip on scroll up */
   useEffect(() => {
     const onScroll = () => {
-      setScrolled(window.scrollY > 12);
+      const y = window.scrollY;
+      setScrolled(y > 12);
+      setShowKenteStrip(y > 90 && y < lastY.current);
+      lastY.current = y;
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -57,19 +64,22 @@ export default function Navbar() {
 
   /* body lock */
   useEffect(() => {
-    document.body.style.overflow = (menuOpen || cartOpen) ? "hidden" : "";
+    document.body.style.overflow = (menuOpen || cartOpen || wishOpen) ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [menuOpen, cartOpen]);
+  }, [menuOpen, cartOpen, wishOpen]);
 
-  /* close cart on outside click */
+  /* close panels on outside click */
   useEffect(() => {
-    if (!cartOpen) return;
+    if (!cartOpen && !wishOpen) return;
     const h = (e: MouseEvent) => {
-      if (cartPanelRef.current && e.target instanceof Node && !cartPanelRef.current.contains(e.target)) setCartOpen(false);
+      if (e.target instanceof Node) {
+        if (cartOpen && cartPanelRef.current && !cartPanelRef.current.contains(e.target)) setCartOpen(false);
+        if (wishOpen && wishPanelRef.current && !wishPanelRef.current.contains(e.target)) setWishOpen(false);
+      }
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
-  }, [cartOpen]);
+  }, [cartOpen, wishOpen]);
 
   const triggerPulse = () => {
     setCartPulse(true);
@@ -105,6 +115,19 @@ export default function Navbar() {
         z-index: 200;
         font-family: 'DM Sans', sans-serif;
       }
+
+      .nav-kente-strip {
+        height: 0;
+        overflow: hidden;
+        transition: height 0.25s ease;
+        background: repeating-linear-gradient(
+          90deg,
+          var(--kente) 0px, var(--kente) 24px,
+          var(--ink) 24px, var(--ink) 48px,
+          #fff 48px, #fff 72px
+        );
+      }
+      .nav-kente-strip.on { height: 6px; }
 
       .nav {
         background: rgba(247,246,244,0.95);
@@ -759,6 +782,40 @@ export default function Navbar() {
       }
       .cart-continue:hover { color: var(--kente); }
 
+      .wish-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.28);
+        z-index: 299;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s;
+      }
+      .wish-overlay.is-open { opacity: 1; pointer-events: all; }
+      .wish-panel {
+        position: fixed;
+        top: 0;
+        right: -420px;
+        width: min(420px, 100vw);
+        height: 100dvh;
+        background: var(--cream);
+        z-index: 320;
+        border-left: 1px solid var(--border);
+        transition: right 0.3s ease;
+        display: flex;
+        flex-direction: column;
+      }
+      .wish-panel.is-open { right: 0; }
+      .wish-head { padding: 20px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+      .wish-title { font-family:'Bebas Neue', sans-serif; letter-spacing:0.1em; font-size:24px; }
+      .wish-close { border:0; background:none; font-size:18px; cursor:pointer; }
+      .wish-list { padding: 14px; overflow:auto; display:grid; gap:10px; }
+      .wish-item { border:1px solid var(--border); background:#fff; padding:12px; display:flex; justify-content:space-between; gap:12px; align-items:center; }
+      .wish-name { font-size:13px; font-weight:600; color:var(--ink); }
+      .wish-price { font-family:'Bebas Neue', sans-serif; letter-spacing:0.04em; color:var(--ink); }
+      .wish-remove { border:1px solid var(--border); background:#fff; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; padding:7px 10px; cursor:pointer; }
+      .wish-empty { padding: 28px; color: rgba(8,8,7,0.5); }
+
       /* ════════════ RESPONSIVE ════════════ */
       @media (max-width: 768px) {
         .nav-links, .nav-shop-btn-wrap { display: none; }
@@ -771,7 +828,8 @@ export default function Navbar() {
     `}</style>
 
     {/* ── CART OVERLAY ── */}
-    <div className={`cart-overlay${cartOpen ? " is-open" : ""}`} onClick={() => setCartOpen(false)} />
+    <div className={`cart-overlay${cartOpen ? " is-open" : ""}`} onClick={() => { setCartOpen(false); setWishOpen(false); }} />
+    <div className={`wish-overlay${wishOpen ? " is-open" : ""}`} onClick={() => setWishOpen(false)} />
 
     {/* ── CART PANEL ── */}
     <div ref={cartPanelRef} className={`cart-panel${cartOpen ? " is-open" : ""}`}>
@@ -835,8 +893,35 @@ export default function Navbar() {
       )}
     </div>
 
+
+    <div ref={wishPanelRef} className={`wish-panel${wishOpen ? " is-open" : ""}`}>
+      <div className="wish-head">
+        <div className="wish-title">Wishlist</div>
+        <button className="wish-close" onClick={() => setWishOpen(false)} aria-label="Close wishlist">✕</button>
+      </div>
+      {wishlist.length === 0 ? (
+        <div className="wish-empty">No saved pieces yet.</div>
+      ) : (
+        <div className="wish-list">
+          {wishlist.map((item) => (
+            <div key={item.slug} className="wish-item">
+              <div>
+                <div className="wish-name">{item.name}</div>
+                <div className="wish-price">GH₵ {item.price.toLocaleString()}</div>
+              </div>
+              <div>
+                <Link href={`/shop/${item.slug}`} className="wish-remove" onClick={() => setWishOpen(false)}>View</Link>
+                <button className="wish-remove" onClick={() => removeFromWishlist(item.slug)}>Remove</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
     {/* ── NAV SHELL ── */}
     <div className="nav-shell">
+      <div className={`nav-kente-strip${showKenteStrip ? " on" : ""}`} />
       <header
         className={`nav${scrolled ? " scrolled" : ""}`}
       >
@@ -873,7 +958,7 @@ export default function Navbar() {
               <Link href="/shop" className="nav-shop-btn">Shop Now</Link>
             </span>
 
-            <button className="wish-btn" aria-label={`Wishlist, ${wishlistCount} items`}>
+            <button className="wish-btn" onClick={() => { setWishOpen((o) => !o); setCartOpen(false); }} aria-label={`Wishlist, ${wishlistCount} items`}>
               ♡
               {wishlistCount > 0 && <div className="wish-badge">{wishlistCount}</div>}
             </button>

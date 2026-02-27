@@ -281,22 +281,9 @@ export default function Hero() {
                   <p className="strip-price">GHS {heroProduct?.price ?? 120}</p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleHeroAdd}
-                  style={{
-                    padding: "11px 22px",
-                    fontSize: "10px",
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    border: "1px solid #0b0b0a",
-                    background: "#d4a843",
-                    color: "#0b0b0a",
-                    cursor: "pointer",
-                  }}
-                >
+                <AuraButton onClick={handleHeroAdd} variant="fill" style={{ background: "#0b0b0a", color: "#f7f6f4" }}>
                   Add to bag
-                </button>
+                </AuraButton>
               </div>
             </div>
           </div>

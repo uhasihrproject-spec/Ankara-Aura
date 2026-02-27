@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { MouseEventHandler } from "react";
 
 type Variant = "fill" | "ghost";
 
@@ -12,12 +13,16 @@ export default function AuraButton({
   variant = "fill",
   className,
   style,
+  onClick,
+  type = "button",
 }: {
-  href: string;
+  href?: string;
   children: React.ReactNode;
   variant?: Variant;
   className?: string;
   style?: React.CSSProperties;
+  onClick?: MouseEventHandler<HTMLButtonElement | HTMLAnchorElement>;
+  type?: "button" | "submit";
 }) {
   const base =
     "inline-flex items-center justify-center select-none whitespace-nowrap " +
@@ -26,22 +31,26 @@ export default function AuraButton({
 
   const fill =
     "bg-black text-white border border-black " +
+    "px-5 py-2.5 text-[11px] tracking-[0.16em] uppercase " +
     "hover:bg-transparent hover:text-black hover:-translate-y-0.5";
 
   const ghost =
     "text-black/70 border-b border-black/15 pb-[2px] " +
     "hover:text-black hover:border-black";
 
-  const styles = cx(
-    base,
-    variant === "fill" ? "px-8 py-3 text-[11px] tracking-[0.18em] uppercase" : "text-[18px]",
-    variant === "fill" ? fill : ghost,
-    className
-  );
+  const styles = cx(base, variant === "fill" ? fill : "text-[18px]", variant === "fill" ? "" : ghost, className);
+
+  if (href) {
+    return (
+      <Link href={href} className={styles} style={style} onClick={onClick as MouseEventHandler<HTMLAnchorElement> | undefined}>
+        {children}
+      </Link>
+    );
+  }
 
   return (
-    <Link href={href} className={styles} style={style}>
+    <button type={type} className={styles} style={style} onClick={onClick as MouseEventHandler<HTMLButtonElement> | undefined}>
       {children}
-    </Link>
+    </button>
   );
 }

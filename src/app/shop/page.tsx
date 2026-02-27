@@ -331,9 +331,9 @@ export default function ShopPage() {
           font-family: 'Bebas Neue', sans-serif;
           font-size: 14px; letter-spacing: 0.22em;
           text-transform: uppercase;
-          background: var(--kente); color: white;
+          background: var(--ink); color: var(--cream);
           padding: 14px 36px; text-decoration: none;
-          border: none; cursor: pointer;
+          border: 1px solid var(--ink); cursor: pointer;
           position: relative; overflow: hidden;
           transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -358,7 +358,7 @@ export default function ShopPage() {
           cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.2s;
           color: rgba(247,246,244,0.6);
         }
-        .hero-arrow:hover { border-color: var(--kente); background: var(--kente); color: white; transform: translateY(-50%) scale(1.1); }
+        .hero-arrow:hover { border-color: var(--kente); background: var(--ink); color: var(--cream); transform: translateY(-50%) scale(1.1); }
         .hero-arrow.left  { left: 28px; }
         .hero-arrow.right { right: 28px; }
         .hero-arrow svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -475,8 +475,8 @@ export default function ShopPage() {
         .product-card-quick {
           position: absolute; top: 16px; right: 16px;
           z-index: 4;
-          background: var(--kente); color: white;
-          border: none; cursor: pointer;
+          background: var(--ink); color: var(--cream);
+          border: 1px solid var(--ink); cursor: pointer;
           font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
           font-family: 'DM Sans', sans-serif;
           padding: 8px 14px;
@@ -488,7 +488,7 @@ export default function ShopPage() {
           opacity: 1; transform: translateY(0); pointer-events: all;
         }
         .product-card-quick.added {
-          background: var(--forest); opacity: 1; transform: translateY(0); pointer-events: all;
+          background: var(--gold); color: var(--ink); opacity: 1; transform: translateY(0); pointer-events: all;
         }
 
         /* ── added flash ── */
@@ -661,7 +661,7 @@ export default function ShopPage() {
                     setTimeout(() => setAddedSlug(null), 1800);
                   }}
                 >
-                  {addedSlug === product.slug ? "✓ Added" : "+ Quick Add"}
+                  {addedSlug === product.slug ? "✓ Added" : "Quick Add"}
                 </div>
               </Link>
             ))}
