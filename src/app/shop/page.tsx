@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { PRODUCTS } from "@/lib/products";
+import type { Product } from "@/lib/products";
+import { useCart } from "@/lib/cart-context";
 
 /* ─── Ankara SVG pattern (inline, scalable) ─── */
 function AnkaraPattern({ opacity = 0.12 }) {
@@ -19,13 +21,13 @@ function AnkaraPattern({ opacity = 0.12 }) {
       <defs>
         <pattern id="ankara-hero" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
           {/* outer diamond */}
-          <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="#c8502a" strokeWidth="1.4"/>
+          <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="#d4a843" strokeWidth="1.4"/>
           {/* inner diamond */}
           <polygon points="50,20 80,50 50,80 20,50" fill="none" stroke="#d4a843" strokeWidth="0.9"/>
           {/* tiny center */}
-          <polygon points="50,36 64,50 50,64 36,50" fill="none" stroke="#c8502a" strokeWidth="0.6"/>
+          <polygon points="50,36 64,50 50,64 36,50" fill="none" stroke="#d4a843" strokeWidth="0.6"/>
           {/* corner dots */}
-          <circle cx="3"  cy="3"  r="2.5" fill="#c8502a"/>
+          <circle cx="3"  cy="3"  r="2.5" fill="#d4a843"/>
           <circle cx="97" cy="3"  r="2.5" fill="#d4a843"/>
           <circle cx="3"  cy="97" r="2.5" fill="#1a3a5c"/>
           <circle cx="97" cy="97" r="2.5" fill="#2d6a4f"/>
@@ -33,7 +35,7 @@ function AnkaraPattern({ opacity = 0.12 }) {
           <line x1="50" y1="37" x2="50" y2="63" stroke="#d4a843" strokeWidth="0.5" strokeDasharray="2,4"/>
           <line x1="37" y1="50" x2="63" y2="50" stroke="#d4a843" strokeWidth="0.5" strokeDasharray="2,4"/>
           {/* mid edge triangles */}
-          <polygon points="50,3 56,14 44,14" fill="#c8502a" opacity="0.4"/>
+          <polygon points="50,3 56,14 44,14" fill="#d4a843" opacity="0.4"/>
           <polygon points="97,50 86,56 86,44" fill="#d4a843" opacity="0.4"/>
           <polygon points="50,97 56,86 44,86" fill="#1a3a5c" opacity="0.4"/>
           <polygon points="3,50 14,56 14,44" fill="#2d6a4f" opacity="0.4"/>
@@ -41,7 +43,7 @@ function AnkaraPattern({ opacity = 0.12 }) {
         {/* second tighter pattern for variation */}
         <pattern id="ankara-fine" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
           <polygon points="20,2 38,20 20,38 2,20" fill="none" stroke="#d4a843" strokeWidth="0.5" opacity="0.5"/>
-          <circle cx="20" cy="20" r="1.5" fill="#c8502a" opacity="0.6"/>
+          <circle cx="20" cy="20" r="1.5" fill="#d4a843" opacity="0.6"/>
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#ankara-fine)"/>
@@ -51,16 +53,16 @@ function AnkaraPattern({ opacity = 0.12 }) {
 }
 
 /* ─── Placeholder product visual (colour swatch + wax texture) ─── */
-function ProductVisual({ product, size = 420 }) {
-  const colors = {
-    "ankara-oversized-tee": { bg: "#1a1a1a", accent: "#c8502a", stripe: "#d4a843" },
-    "kente-blazer":          { bg: "#0d1f12", accent: "#2d6a4f", stripe: "#c8502a" },
+function ProductVisual({ product, size = 420 }: { product: Product; size?: number }) {
+  const colors: Record<string, { bg: string; accent: string; stripe: string }> = {
+    "ankara-oversized-tee": { bg: "#1a1a1a", accent: "#d4a843", stripe: "#d4a843" },
+    "kente-blazer":          { bg: "#0d1f12", accent: "#2d6a4f", stripe: "#d4a843" },
     "mono-cargo-pant":       { bg: "#0b0b0a", accent: "#333",    stripe: "#555"    },
     "adinkra-hoodie":        { bg: "#1a0a0d", accent: "#8b2635", stripe: "#d4a843" },
-    "wax-print-tee":         { bg: "#0d1a2e", accent: "#1a3a5c", stripe: "#c8502a" },
-    "linen-short-set":       { bg: "#f0ebe0", accent: "#c8502a", stripe: "#d4a843" },
+    "wax-print-tee":         { bg: "#0d1a2e", accent: "#1a3a5c", stripe: "#d4a843" },
+    "linen-short-set":       { bg: "#f0ebe0", accent: "#d4a843", stripe: "#d4a843" },
   };
-  const c = colors[product.slug] || { bg: "#111", accent: "#c8502a", stripe: "#d4a843" };
+  const c = colors[product.slug] || { bg: "#111", accent: "#d4a843", stripe: "#d4a843" };
   const half = size / 2;
 
   return (
@@ -94,22 +96,23 @@ function ProductVisual({ product, size = 420 }) {
   );
 }
 
-const SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 const HERO_PRODUCTS = PRODUCTS.filter(p => p.featured).slice(0, 5);
 
 export default function ShopPage() {
   const [activeIdx,   setActiveIdx]   = useState(0);
-  const [prevIdx,     setPrevIdx]     = useState(null);
+  const [prevIdx,     setPrevIdx]     = useState<number | null>(null);
   const [direction,   setDirection]   = useState(1); // 1=next, -1=prev
   const [animating,   setAnimating]   = useState(false);
-  const [addedSlug,   setAddedSlug]   = useState(null);
+  const [addedSlug,   setAddedSlug]   = useState<string | null>(null);
   const [filter,      setFilter]      = useState("All");
-  const timerRef = useRef(null);
+  const [query,       setQuery]       = useState("");
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { addToCart } = useCart();
 
   const active = HERO_PRODUCTS[activeIdx];
 
-  const go = (nextIdx, dir) => {
+  const go = (nextIdx: number, dir: 1 | -1) => {
     if (animating || nextIdx === activeIdx) return;
     setDirection(dir);
     setPrevIdx(activeIdx);
@@ -123,18 +126,42 @@ export default function ShopPage() {
 
   // auto-advance
   useEffect(() => {
-    timerRef.current = setInterval(next, 5000);
-    return () => clearInterval(timerRef.current);
-  }, [activeIdx, animating]);
+    timerRef.current = setInterval(() => {
+      setDirection(1);
+      setPrevIdx((current) => {
+        const prevIndex = current ?? activeIdx;
+        setAnimating(true);
+        setActiveIdx((idx) => (idx + 1) % HERO_PRODUCTS.length);
+        return prevIndex;
+      });
+      setTimeout(() => { setPrevIdx(null); setAnimating(false); }, 900);
+    }, 5000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [activeIdx]);
 
   // pause on hover
-  const pauseAuto = () => clearInterval(timerRef.current);
-  const resumeAuto = () => { timerRef.current = setInterval(next, 5000); };
+  const pauseAuto = () => { if (timerRef.current) clearInterval(timerRef.current); };
+  const resumeAuto = () => {
+    timerRef.current = setInterval(() => {
+      setDirection(1);
+      setPrevIdx((current) => {
+        const prevIndex = current ?? activeIdx;
+        setAnimating(true);
+        setActiveIdx((idx) => (idx + 1) % HERO_PRODUCTS.length);
+        return prevIndex;
+      });
+      setTimeout(() => { setPrevIdx(null); setAnimating(false); }, 900);
+    }, 5000);
+  };
 
   const tags = ["All", ...Array.from(new Set(PRODUCTS.flatMap(p => p.tags)))];
-  const filteredProducts = filter === "All"
-    ? PRODUCTS
-    : PRODUCTS.filter(p => p.tags.includes(filter));
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredProducts = PRODUCTS.filter((p) => {
+    const matchesTag = filter === "All" || p.tags.includes(filter);
+    if (!normalizedQuery) return matchesTag;
+    const haystack = `${p.name} ${p.desc} ${p.tags.join(" ")}`.toLowerCase();
+    return matchesTag && haystack.includes(normalizedQuery);
+  });
 
   return (
     <>
@@ -144,7 +171,7 @@ export default function ShopPage() {
         :root {
           --ink:    #0b0b0a;
           --cream:  #f7f6f4;
-          --kente:  #c8502a;
+          --kente:  #d4a843;
           --gold:   #d4a843;
           --indigo: #1a3a5c;
           --forest: #2d6a4f;
@@ -306,23 +333,18 @@ export default function ShopPage() {
         }
         .hero-info-right { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
         .hero-cta {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 14px; letter-spacing: 0.22em;
+          font-size: 11px; letter-spacing: 0.16em;
           text-transform: uppercase;
-          background: var(--kente); color: white;
-          padding: 14px 36px; text-decoration: none;
-          border: none; cursor: pointer;
-          position: relative; overflow: hidden;
-          transition: transform 0.2s, box-shadow 0.2s;
+          background: var(--ink); color: var(--cream);
+          padding: 9px 20px; text-decoration: none;
+          border: 1px solid var(--ink); cursor: pointer;
+          transition: background 0.2s, color 0.2s, transform 0.18s;
+          font-family: 'DM Sans', sans-serif;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
-        .hero-cta::before {
-          content: ''; position: absolute; inset: 0;
-          background: var(--gold);
-          transform: scaleX(0); transform-origin: left;
-          transition: transform 0.35s cubic-bezier(0.77,0,0.175,1);
-        }
-        .hero-cta:hover::before { transform: scaleX(1); }
-        .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(200,80,42,0.35); }
+        .hero-cta:hover { background: transparent; color: var(--cream); transform: translateY(-1px); }
         .hero-cta span { position: relative; z-index: 1; }
 
         /* ── arrows ── */
@@ -336,7 +358,7 @@ export default function ShopPage() {
           cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.2s;
           color: rgba(247,246,244,0.6);
         }
-        .hero-arrow:hover { border-color: var(--kente); background: var(--kente); color: white; transform: translateY(-50%) scale(1.1); }
+        .hero-arrow:hover { border-color: var(--kente); background: var(--ink); color: var(--cream); transform: translateY(-50%) scale(1.1); }
         .hero-arrow.left  { left: 28px; }
         .hero-arrow.right { right: 28px; }
         .hero-arrow svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -385,6 +407,45 @@ export default function ShopPage() {
         /* filter pills */
         .filter-pills {
           display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .shop-search {
+          min-width: min(320px, 100%);
+          border: 1px solid var(--border);
+          background: #fff;
+          height: 38px;
+          padding: 0 12px;
+          font-size: 12px;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: rgba(8,8,7,0.72);
+        }
+        .shop-search-wrap {
+          position: relative;
+          min-width: min(320px, 100%);
+        }
+        .shop-search-wrap .shop-search {
+          width: 100%;
+          padding-right: 36px;
+        }
+        .shop-search-clear {
+          position: absolute;
+          right: 2px;
+          top: 2px;
+          width: 34px;
+          height: 34px;
+          border: none;
+          background: transparent;
+          color: rgba(8,8,7,0.45);
+          font-size: 18px;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+        .shop-search-clear:hover {
+          color: rgba(8,8,7,0.9);
+        }
+        .shop-search:focus {
+          outline: none;
+          border-color: var(--ink);
         }
         .pill {
           font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
@@ -453,20 +514,20 @@ export default function ShopPage() {
         .product-card-quick {
           position: absolute; top: 16px; right: 16px;
           z-index: 4;
-          background: var(--kente); color: white;
-          border: none; cursor: pointer;
-          font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+          background: var(--ink); color: var(--cream);
+          border: 1px solid rgba(247,246,244,0.45); cursor: pointer;
+          font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
           font-family: 'DM Sans', sans-serif;
-          padding: 8px 14px;
+          padding: 9px 14px;
           opacity: 0; transform: translateY(-8px);
-          transition: opacity 0.3s, transform 0.3s;
+          transition: opacity 0.3s, transform 0.3s, background 0.2s, color 0.2s;
           pointer-events: none;
         }
         .product-card:hover .product-card-quick {
           opacity: 1; transform: translateY(0); pointer-events: all;
         }
         .product-card-quick.added {
-          background: var(--forest); opacity: 1; transform: translateY(0); pointer-events: all;
+          background: var(--gold); color: var(--ink); border-color: var(--gold); opacity: 1; transform: translateY(0); pointer-events: all;
         }
 
         /* ── added flash ── */
@@ -506,7 +567,7 @@ export default function ShopPage() {
           {prevIdx !== null && (
             <div
               className="hero-slide leave"
-              style={{ "--dir": direction }}
+              style={{ ["--dir" as string]: direction } as CSSProperties}
               key={`leave-${prevIdx}`}
             >
               <div className="hero-bg-text">
@@ -524,7 +585,7 @@ export default function ShopPage() {
           {/* active slide (entering) */}
           <div
             className={`hero-slide${animating ? " enter" : ""}`}
-            style={{ "--dir": direction }}
+            style={{ ["--dir" as string]: direction } as CSSProperties}
             key={`enter-${activeIdx}`}
           >
             <div className="hero-bg-text">
@@ -586,21 +647,48 @@ export default function ShopPage() {
           <div className="section-head">
             <div>
               <div className="section-title">All Pieces</div>
-              <div className="section-sub">{PRODUCTS.length} pieces available</div>
+              <div className="section-sub">{filteredProducts.length} pieces available</div>
             </div>
-            <div className="filter-pills">
-              {tags.map(t => (
-                <button
-                  key={t}
-                  className={`pill${filter === t ? " active" : ""}`}
-                  onClick={() => setFilter(t)}
-                >
-                  {t}
-                </button>
-              ))}
+            <div style={{ display: "grid", gap: "10px", justifyItems: "end" }}>
+              <div className="shop-search-wrap">
+                <input
+                  className="shop-search"
+                  type="search"
+                  placeholder="Search pieces"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  aria-label="Search products"
+                />
+                {query && (
+                  <button
+                    className="shop-search-clear"
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => setQuery("")}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <div className="filter-pills">
+                {tags.map(t => (
+                  <button
+                    key={t}
+                    className={`pill${filter === t ? " active" : ""}`}
+                    onClick={() => setFilter(t)}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
+          {filteredProducts.length === 0 && (
+            <div style={{ padding: "28px 0", color: "rgba(8,8,7,0.5)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "11px" }}>
+              No pieces match your search.
+            </div>
+          )}
           <div className="products-grid">
             {filteredProducts.map((product) => (
               <Link
@@ -613,7 +701,7 @@ export default function ShopPage() {
                   <defs>
                     <pattern id={`cp-${product.slug}`} width="50" height="50" patternUnits="userSpaceOnUse">
                       <polygon points="25,2 48,25 25,48 2,25" fill="none" stroke="#d4a843" strokeWidth="0.7"/>
-                      <circle cx="25" cy="25" r="2" fill="#c8502a" opacity="0.5"/>
+                      <circle cx="25" cy="25" r="2" fill="#d4a843" opacity="0.5"/>
                     </pattern>
                   </defs>
                   <rect width="100%" height="100%" fill={`url(#cp-${product.slug})`}/>
@@ -634,12 +722,12 @@ export default function ShopPage() {
                   className={`product-card-quick${addedSlug === product.slug ? " added" : ""}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    // quick-add with default size M
+                    addToCart({ slug: product.slug, name: product.name, price: product.price, size: "M", qty: 1 });
                     setAddedSlug(product.slug);
                     setTimeout(() => setAddedSlug(null), 1800);
                   }}
                 >
-                  {addedSlug === product.slug ? "✓ Added" : "+ Quick Add"}
+                  {addedSlug === product.slug ? "✓ Added" : "Quick Add"}
                 </div>
               </Link>
             ))}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import type { MouseEventHandler, CSSProperties } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 
@@ -13,7 +14,7 @@ const links = [
 ];
 
 /* ─── SplitLink — each nav word splits on hover ─── */
-function SplitLink({ href, label, onClick }) {
+function SplitLink({ href, label, onClick }: { href: string; label: string; onClick?: MouseEventHandler<HTMLAnchorElement> }) {
   return (
     <Link href={href} className="split-link" onClick={onClick}>
       <span className="split-top">{label}</span>
@@ -26,59 +27,62 @@ function SplitLink({ href, label, onClick }) {
 export default function Navbar() {
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [cartOpen,   setCartOpen]   = useState(false);
+  const [wishOpen,   setWishOpen]   = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
-  const [collapsed,  setCollapsed]  = useState(false);
+  const [showKenteStrip, setShowKenteStrip] = useState(false);
   const [cartPulse,  setCartPulse]  = useState(false);
-  const [particles,  setParticles]  = useState([]);
+  const [particles]  = useState(() => Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: 2 + Math.random() * 3,
+    delay: Math.random() * 1.6,
+    dur: 1 + Math.random() * 1.2,
+    color: ["#d4a843", "#d4a843", "#1a3a5c", "#8b2635", "#2d6a4f"][i % 5],
+    dx: (Math.random() - 0.5) * 70,
+    dy: (Math.random() - 0.5) * 70,
+  })));
   const [logoSpin,   setLogoSpin]   = useState(false);
-  const cartPanelRef = useRef(null);
-  const lastScroll   = useRef(null);
+  const cartPanelRef = useRef<HTMLDivElement | null>(null);
+  const wishPanelRef = useRef<HTMLDivElement | null>(null);
+  const lastY = useRef(0);
 
   // Use shared cart context
-  const { items: cartItems, removeItem, updateQty, totalQty, totalPrice } = useCart();
+  const { items: cartItems, removeItem, updateQty, totalQty, totalPrice, wishlist, wishlistCount, removeFromWishlist } = useCart();
 
-  /* generate cart-button particles once */
+  /* scroll: full nav on scroll up, kente strip when scrolling down */
   useEffect(() => {
-    setParticles(Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: 2 + Math.random() * 3,
-      delay: Math.random() * 1.6,
-      dur: 1 + Math.random() * 1.2,
-      color: ["#c8502a","#d4a843","#1a3a5c","#8b2635","#2d6a4f"][i % 5],
-      dx: (Math.random() - 0.5) * 70,
-      dy: (Math.random() - 0.5) * 70,
-    })));
-  }, []);
+    lastY.current = window.scrollY;
 
-  /* scroll: mark scrolled & collapsed */
-  useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
       setScrolled(y > 12);
-      setCollapsed(y > 80 && y > lastScroll.current);
-      lastScroll.current = y;
+      setShowKenteStrip(y > 90 && y > lastY.current);
+      lastY.current = y;
     };
+
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   /* body lock */
   useEffect(() => {
-    document.body.style.overflow = (menuOpen || cartOpen) ? "hidden" : "";
+    document.body.style.overflow = (menuOpen || cartOpen || wishOpen) ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [menuOpen, cartOpen]);
+  }, [menuOpen, cartOpen, wishOpen]);
 
-  /* close cart on outside click */
+  /* close panels on outside click */
   useEffect(() => {
-    if (!cartOpen) return;
-    const h = (e) => {
-      if (cartPanelRef.current && !cartPanelRef.current.contains(e.target)) setCartOpen(false);
+    if (!cartOpen && !wishOpen) return;
+    const h = (e: MouseEvent) => {
+      if (e.target instanceof Node) {
+        if (cartOpen && cartPanelRef.current && !cartPanelRef.current.contains(e.target)) setCartOpen(false);
+        if (wishOpen && wishPanelRef.current && !wishPanelRef.current.contains(e.target)) setWishOpen(false);
+      }
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
-  }, [cartOpen]);
+  }, [cartOpen, wishOpen]);
 
   const triggerPulse = () => {
     setCartPulse(true);
@@ -98,7 +102,7 @@ export default function Navbar() {
       :root {
         --ink:     #0b0b0a;
         --cream:   #f7f6f4;
-        --kente:   #c8502a;
+        --kente:   #d4a843;
         --gold:    #d4a843;
         --indigo:  #1a3a5c;
         --forest:  #2d6a4f;
@@ -115,43 +119,28 @@ export default function Navbar() {
         font-family: 'DM Sans', sans-serif;
       }
 
+
       .nav {
         background: rgba(247,246,244,0.95);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-bottom: 1px solid var(--border);
-        transition: box-shadow 0.3s, height 0.4s cubic-bezier(0.4,0,0.2,1);
+        transition: box-shadow 0.3s, height 0.35s cubic-bezier(0.4,0,0.2,1), background 0.3s;
         height: var(--nav-h);
         overflow: hidden;
       }
       .nav.scrolled { box-shadow: 0 2px 40px rgba(8,8,7,0.08); }
-      .nav.collapsed {
-        height: 8px;
-        cursor: pointer;
-      }
-      .nav.collapsed:hover {
-        height: var(--nav-h);
-      }
-
-      /* collapsed indicator stripes */
-      .nav-stripe-indicator {
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 8px;
+      .nav.pattern-mode {
+        height: 10px;
         background: repeating-linear-gradient(
           90deg,
-          var(--kente)  0px, var(--kente)  18px,
-          var(--gold)   18px, var(--gold)  36px,
-          var(--ink)    36px, var(--ink)   54px,
-          var(--indigo) 54px, var(--indigo) 72px,
-          var(--forest) 72px, var(--forest) 90px
+          var(--kente) 0px, var(--kente) 24px,
+          var(--ink) 24px, var(--ink) 48px,
+          #fff 48px, #fff 72px
         );
-        opacity: 0;
-        transition: opacity 0.3s;
-        pointer-events: none;
+        border-bottom-color: rgba(8,8,7,0.22);
       }
-      .nav.collapsed .nav-stripe-indicator { opacity: 1; }
-      .nav.collapsed:hover .nav-stripe-indicator { opacity: 0; }
+      .nav.pattern-mode .nav-inner { opacity: 0; pointer-events: none; }
 
       .nav-inner {
         max-width: 1200px;
@@ -162,6 +151,7 @@ export default function Navbar() {
         align-items: center;
         justify-content: space-between;
         gap: 32px;
+        transition: opacity 0.2s;
       }
 
       /* ════════════ LOGO ════════════ */
@@ -317,6 +307,31 @@ export default function Navbar() {
       }
 
       /* ════════════ CART BUTTON ════════════ */
+      .wish-btn {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 18px;
+      }
+      .wish-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        min-width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: var(--kente);
+        color: #111;
+        font-size: 10px;
+        display: grid;
+        place-items: center;
+        font-family: 'Bebas Neue', sans-serif;
+      }
+
       .cart-btn {
         position: relative;
         width: 44px; height: 44px;
@@ -770,6 +785,40 @@ export default function Navbar() {
       }
       .cart-continue:hover { color: var(--kente); }
 
+      .wish-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.28);
+        z-index: 299;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s;
+      }
+      .wish-overlay.is-open { opacity: 1; pointer-events: all; }
+      .wish-panel {
+        position: fixed;
+        top: 0;
+        right: -420px;
+        width: min(420px, 100vw);
+        height: 100dvh;
+        background: var(--cream);
+        z-index: 320;
+        border-left: 1px solid var(--border);
+        transition: right 0.3s ease;
+        display: flex;
+        flex-direction: column;
+      }
+      .wish-panel.is-open { right: 0; }
+      .wish-head { padding: 20px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+      .wish-title { font-family:'Bebas Neue', sans-serif; letter-spacing:0.1em; font-size:24px; }
+      .wish-close { border:0; background:none; font-size:18px; cursor:pointer; }
+      .wish-list { padding: 14px; overflow:auto; display:grid; gap:10px; }
+      .wish-item { border:1px solid var(--border); background:#fff; padding:12px; display:flex; justify-content:space-between; gap:12px; align-items:center; }
+      .wish-name { font-size:13px; font-weight:600; color:var(--ink); }
+      .wish-price { font-family:'Bebas Neue', sans-serif; letter-spacing:0.04em; color:var(--ink); }
+      .wish-remove { border:1px solid var(--border); background:#fff; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; padding:7px 10px; cursor:pointer; }
+      .wish-empty { padding: 28px; color: rgba(8,8,7,0.5); }
+
       /* ════════════ RESPONSIVE ════════════ */
       @media (max-width: 768px) {
         .nav-links, .nav-shop-btn-wrap { display: none; }
@@ -782,7 +831,8 @@ export default function Navbar() {
     `}</style>
 
     {/* ── CART OVERLAY ── */}
-    <div className={`cart-overlay${cartOpen ? " is-open" : ""}`} onClick={() => setCartOpen(false)} />
+    <div className={`cart-overlay${cartOpen ? " is-open" : ""}`} onClick={() => { setCartOpen(false); setWishOpen(false); }} />
+    <div className={`wish-overlay${wishOpen ? " is-open" : ""}`} onClick={() => setWishOpen(false)} />
 
     {/* ── CART PANEL ── */}
     <div ref={cartPanelRef} className={`cart-panel${cartOpen ? " is-open" : ""}`}>
@@ -811,7 +861,7 @@ export default function Navbar() {
         <div className="cart-items">
           {cartItems.map((item, i) => (
             <div key={`${item.slug}-${item.size}`} className="cart-item" style={{ animationDelay: `${i * 0.06}s` }}>
-              <div className="cart-item-swatch" style={{ background: item.color || "#c8502a" }} />
+              <div className="cart-item-swatch" style={{ background: item.color || "#d4a843" }} />
               <div className="cart-item-info">
                 <div className="cart-item-name">{item.name}</div>
                 <div className="cart-item-variant">{item.size ? `Size ${item.size}` : (item.variant || "")}</div>
@@ -846,19 +896,43 @@ export default function Navbar() {
       )}
     </div>
 
+
+    <div ref={wishPanelRef} className={`wish-panel${wishOpen ? " is-open" : ""}`}>
+      <div className="wish-head">
+        <div className="wish-title">Wishlist</div>
+        <button className="wish-close" onClick={() => setWishOpen(false)} aria-label="Close wishlist">✕</button>
+      </div>
+      {wishlist.length === 0 ? (
+        <div className="wish-empty">No saved pieces yet.</div>
+      ) : (
+        <div className="wish-list">
+          {wishlist.map((item) => (
+            <div key={item.slug} className="wish-item">
+              <div>
+                <div className="wish-name">{item.name}</div>
+                <div className="wish-price">GH₵ {item.price.toLocaleString()}</div>
+              </div>
+              <div>
+                <Link href={`/shop/${item.slug}`} className="wish-remove" onClick={() => setWishOpen(false)}>View</Link>
+                <button className="wish-remove" onClick={() => removeFromWishlist(item.slug)}>Remove</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
     {/* ── NAV SHELL ── */}
     <div className="nav-shell">
       <header
-        className={`nav${scrolled ? " scrolled" : ""}${collapsed ? " collapsed" : ""}`}
-        onMouseEnter={() => setCollapsed(false)}
+        className={`nav${scrolled ? " scrolled" : ""}${showKenteStrip ? " pattern-mode" : ""}`}
       >
-        <div className="nav-stripe-indicator" />
         <div className="nav-inner">
 
           {/* LOGO */}
           <Link href="/" className="nav-logo" onMouseEnter={handleLogoHover}>
             <div className="logo-mark">
-              <div className="logo-ring" />
+              <div className={`logo-ring${logoSpin ? " spinning" : ""}`} />
               <div className="logo-mark-inner">
                 <span className="logo-mark-letters">AA</span>
               </div>
@@ -872,7 +946,7 @@ export default function Navbar() {
           {/* DESKTOP LINKS */}
           <nav aria-label="Main navigation">
             <ul className="nav-links">
-              {links.map((l, i) => (
+              {links.map((l) => (
                 <li key={l.href} className="nav-link-item">
                   <SplitLink href={l.href} label={l.label} />
                 </li>
@@ -885,6 +959,11 @@ export default function Navbar() {
             <span className="nav-shop-btn-wrap">
               <Link href="/shop" className="nav-shop-btn">Shop Now</Link>
             </span>
+
+            <button className="wish-btn" onClick={() => { setWishOpen((o) => !o); setCartOpen(false); }} aria-label={`Wishlist, ${wishlistCount} items`}>
+              ♡
+              {wishlistCount > 0 && <div className="wish-badge">{wishlistCount}</div>}
+            </button>
 
             {/* CART */}
             <button
@@ -899,11 +978,11 @@ export default function Navbar() {
                       left: `${p.x}%`, top: `${p.y}%`,
                       width: p.size, height: p.size,
                       background: p.color,
-                      "--delay": `${p.delay}s`,
-                      "--dur": `${p.dur}s`,
-                      "--dx": `${p.dx}px`,
-                      "--dy": `${p.dy}px`,
-                    }} />
+                      ["--delay" as string]: `${p.delay}s`,
+                      ["--dur" as string]: `${p.dur}s`,
+                      ["--dx" as string]: `${p.dx}px`,
+                      ["--dy" as string]: `${p.dy}px`,
+                    } as CSSProperties} />
                   ))}
                 </div>
                 <svg className="cart-icon" viewBox="0 0 24 24">
@@ -940,11 +1019,11 @@ export default function Navbar() {
           <defs>
             <pattern id="ankara" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
               {/* diamond */}
-              <polygon points="40,4 76,40 40,76 4,40" fill="none" stroke="#c8502a" strokeWidth="1.2"/>
+              <polygon points="40,4 76,40 40,76 4,40" fill="none" stroke="#d4a843" strokeWidth="1.2"/>
               {/* inner diamond */}
               <polygon points="40,18 62,40 40,62 18,40" fill="none" stroke="#d4a843" strokeWidth="0.8"/>
               {/* corner dots */}
-              <circle cx="4"  cy="4"  r="2.5" fill="#c8502a"/>
+              <circle cx="4"  cy="4"  r="2.5" fill="#d4a843"/>
               <circle cx="76" cy="4"  r="2.5" fill="#d4a843"/>
               <circle cx="4"  cy="76" r="2.5" fill="#1a3a5c"/>
               <circle cx="76" cy="76" r="2.5" fill="#2d6a4f"/>

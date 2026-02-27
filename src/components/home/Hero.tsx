@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCart } from "@/lib/cart-context";
+import { getProduct } from "@/lib/products";
 import AuraButton from "@/components/ui/AuraButton";
 
 /** Animated Ankara SVG — tiles rotate & pulse via CSS */
@@ -76,6 +78,13 @@ export default function Hero() {
     return () => clearTimeout(t);
   }, []);
   const on = (d: number) => (show ? `on d${d}` : "");
+  const { addToCart } = useCart();
+  const heroProduct = getProduct("ankara-oversized-tee");
+
+  const handleHeroAdd = () => {
+    if (!heroProduct) return;
+    addToCart({ slug: heroProduct.slug, name: heroProduct.name, price: heroProduct.price, size: "M", qty: 1 });
+  };
 
   return (
     <>
@@ -215,19 +224,6 @@ export default function Hero() {
 
         <div className="ghost" style={{ top: "-14px", left: "-6px" }}>ANKARA</div>
         <div className="ghost" style={{ top: "152px", left: "-6px" }}>AURA</div>
-
-        <div className="tw">
-          <div className="tr">
-            {[...Array(2)].map((_, i) => (
-              <span key={i} style={{ display: "flex", alignItems: "center" }}>
-                {["Ankara Aura", "Street Luxury", "Premium Fabric", "Cultural Texture", "New Collection", "Accra, Ghana"].map((t) => (
-                  <span key={t} className="ti">{t}<span className="td" /></span>
-                ))}
-              </span>
-            ))}
-          </div>
-        </div>
-
         <div className="hi">
           <div className={`ew af ${on(1)}`}>
             <span className="ew-text">Ankara Aura</span>
@@ -268,15 +264,11 @@ export default function Hero() {
 
               <div className={`hr-strip af ${on(6)}`}>
                 <div>
-                  <p className="strip-lbl">Ankara Oversized Tee</p>
-                  <p className="strip-price">GHS 120</p>
+                  <p className="strip-lbl">{heroProduct?.name ?? "Ankara Oversized Tee"}</p>
+                  <p className="strip-price">GHS {heroProduct?.price ?? 120}</p>
                 </div>
 
-                <AuraButton
-                  href="/shop"
-                  variant="fill"
-                  style={{ padding: "11px 22px", fontSize: "10px" }}
-                >
+                <AuraButton onClick={handleHeroAdd} variant="fill" style={{ background: "#0b0b0a", color: "#f7f6f4" }}>
                   Add to bag
                 </AuraButton>
               </div>
