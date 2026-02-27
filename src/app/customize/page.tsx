@@ -220,12 +220,15 @@ export default function CustomizePage() {
 
         /* ═══ HERO ═══ */
         .cx-hero {
-          min-height: 88svh; display:flex; flex-direction:column; justify-content:center;
+          min-height: 88svh; display:flex; flex-direction:column;
           background:var(--cream); border-bottom:1px solid var(--b);
           position:relative; overflow:hidden;
-          padding: 0;
         }
-        .cx-hero-inner { position:relative; z-index:2; padding: 0 48px; max-width:1200px; margin:0 auto; }
+        .cx-hero-inner {
+          position:relative; z-index:2; padding: 40px 48px 64px;
+          max-width:1200px; margin:0 auto; flex:1;
+          display:flex; flex-direction:column; justify-content:center;
+        }
         .cx-hero-tag {
           font-family:var(--fa); font-size:15px; color:var(--kente);
           margin-bottom:28px; letter-spacing:0.06em;
@@ -536,6 +539,54 @@ export default function CustomizePage() {
         .cx-close-solid { color:var(--ink); }
         .cx-close-stroke { -webkit-text-stroke:2px var(--ink); color:transparent; }
         .cx-close-sub { font-family:var(--fa); font-size:17px; color:rgba(11,11,10,0.35); margin-top:32px; }
+
+        /* customize hero eyebrow */
+        .cx-ey-bar {
+          position:relative; z-index:3;
+          display:flex; align-items:center; gap:14px;
+          padding:20px 48px 0;
+          opacity:0; animation:fup 0.8s cubic-bezier(0.16,1,0.3,1) 0.06s forwards;
+          flex-shrink:0;
+        }
+        @media(max-width:768px){ .cx-ey-bar { padding:16px 20px 0; } }
+        .cx-ey-text { font-family:var(--fa); font-size:14px; color:rgba(11,11,10,0.36); white-space:nowrap; }
+        .cx-ey-rule { flex:1; height:1px; background:var(--b); min-width:20px; }
+        .cx-ey-dot {
+          width:5px; height:5px; border-radius:50%; background:var(--kente); flex-shrink:0;
+          animation:cxDot 2.2s ease-in-out infinite;
+        }
+        @keyframes cxDot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.5)} }
+
+        /* ─── GLOBAL MOBILE ─── */
+        @media(max-width:768px){
+          .cx-hero { min-height:auto; padding:40px 0 56px; justify-content:flex-start; }
+          .cx-hero-inner { padding:0 20px; }
+          .cx-hero-h1 { font-size:clamp(52px,14vw,88px); }
+          .cx-hero-sub { font-size:16px; max-width:100%; margin-top:22px; }
+          .cx-hero-steps { margin-top:32px; gap:20px; }
+          .cx-step-sep { display:none; }
+
+          .cx-studio-layout { grid-template-columns:1fr; }
+          .cx-preview { position:relative; top:0; height:280px; border-bottom:1px solid var(--b); }
+          .cx-options { padding:32px 20px 48px; }
+          .cx-opt-grid { grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); }
+
+          .cx-meas-s { padding:64px 0; }
+          .cx-meas-layout { grid-template-columns:1fr; gap:36px; }
+
+          .cx-sum-s { padding:72px 0; }
+          .cx-sum-title { font-size:clamp(32px,9vw,56px); margin-bottom:36px; }
+          .cx-consult-btn { padding:15px 32px; font-size:11px; margin-top:36px; }
+          .cx-wa-btn { margin-top:14px; margin-left:0; display:flex; }
+
+          .cx-close-s { padding:72px 0; }
+          .cx-close-title { font-size:clamp(40px,12vw,80px); }
+        }
+        @media(max-width:480px){
+          .cx-hero-h1 { font-size:clamp(44px,13vw,76px); }
+          .cx-opt-grid { grid-template-columns:1fr 1fr; }
+          .cx-sum-row { flex-direction:column; gap:4px; }
+        }
       `}</style>
 
       <KenteBar height={4} />
@@ -544,6 +595,15 @@ export default function CustomizePage() {
       <section className="cx-hero">
         <AnkaraPattern id="cx-hero-p" opacity={0.06} />
         <div className="cx-ghost">DESIGN</div>
+
+        {/* eyebrow bar */}
+        <div className="cx-ey-bar">
+          <span className="cx-ey-text">Ankara Aura</span>
+          <div className="cx-ey-rule"/>
+          <div className="cx-ey-dot"/>
+          <span className="cx-ey-text" style={{color:"var(--kente)"}}>Custom Studio</span>
+        </div>
+
         <div className="cx-hero-inner">
           <p className="cx-hero-tag">Ankara Aura — Custom Studio</p>
           <h1 className="cx-hero-h1">

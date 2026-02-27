@@ -173,27 +173,47 @@ export default function AboutPage() {
         /* ═══ 01 — HERO ═══ */
         .ab-hero {
           position: relative; overflow: hidden;
-          min-height: 100svh;
-          display: flex; flex-direction: column; justify-content: center;
+          min-height: 92svh;
+          display: flex; flex-direction: column;
           background: var(--cream);
           border-bottom: 1px solid var(--b);
         }
+        /* eyebrow strip */
+        .ab-hero-eyebrow-bar {
+          position: relative; z-index: 3;
+          display: flex; align-items: center; gap: 14px;
+          padding: 20px 48px 0;
+          opacity: 0; animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.06s forwards;
+        }
+        @media(max-width:768px){ .ab-hero-eyebrow-bar { padding: 16px 22px 0; } }
+        .ab-hero-ey-text { font-family: var(--fa); font-size: 14px; color: rgba(11,11,10,0.36); white-space: nowrap; }
+        .ab-hero-ey-rule { flex: 1; height: 1px; background: var(--b); min-width: 20px; }
+        .ab-hero-ey-dot {
+          width: 5px; height: 5px; border-radius: 50%; background: var(--kente); flex-shrink: 0;
+          animation: abDotPulse 2.2s ease-in-out infinite;
+        }
+        @keyframes abDotPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.5)} }
+
         .ab-hero-inner {
           position: relative; z-index: 2;
-          max-width: 1200px; margin: 0 auto; padding: 0 48px;
+          max-width: 1200px; margin: 0 auto;
+          padding: 56px 48px 64px;
+          flex: 1; display: flex; flex-direction: column; justify-content: center;
         }
-        .ab-hero-eyebrow {
+        @media(max-width:768px){ .ab-hero-inner { padding: 36px 22px 48px; } }
+
+        .ab-hero-kente-tag {
+          display: inline-flex; align-items: center; gap: 10px;
           font-family: var(--fa); font-size: 15px; color: var(--kente);
-          letter-spacing: 0.06em; margin-bottom: 32px;
-          opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+          letter-spacing: 0.04em; margin-bottom: 28px;
+          opacity: 0; animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.14s forwards;
         }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+        .ab-hero-kente-tag::before { content: ''; width: 24px; height: 2px; background: var(--kente); flex-shrink: 0; }
 
         .ab-hero-h1 {
           font-family: var(--fd);
-          font-size: clamp(62px, 10.5vw, 158px);
+          font-size: clamp(56px, 9.5vw, 148px);
           line-height: 0.87; letter-spacing: 0.01em;
-          margin-bottom: 0;
         }
         .ab-hero-h1 .solid  { color: var(--ink); }
         .ab-hero-h1 .stroke {
@@ -201,27 +221,31 @@ export default function AboutPage() {
           color: transparent;
         }
         .ab-hero-sub {
-          font-family: var(--fa); font-size: clamp(18px, 2.5vw, 26px);
-          color: rgba(11,11,10,0.46); line-height: 1.55;
-          max-width: 560px; margin-top: 36px;
-          opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.6s forwards;
-        }
-        .ab-hero-scroll {
-          position: absolute; bottom: 40px; left: 48px;
-          display: flex; align-items: center; gap: 12px;
-          font-family: var(--fa); font-size: 13px; color: rgba(11,11,10,0.3);
-          opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 1s forwards;
-        }
-        .ab-hero-scroll-line {
-          width: 40px; height: 1px; background: rgba(11,11,10,0.2);
-          animation: scrollPulse 2s ease-in-out infinite;
-        }
-        @keyframes scrollPulse {
-          0%,100%{transform:scaleX(1);opacity:0.5}
-          50%{transform:scaleX(1.4);opacity:1}
+          font-family: var(--fa); font-size: clamp(17px, 2.3vw, 24px);
+          color: rgba(11,11,10,0.46); line-height: 1.6;
+          max-width: 520px; margin-top: 28px;
+          opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.62s forwards;
         }
 
-        /* ghost watermark */
+        /* bottom scroll hint + stats bar */
+        .ab-hero-bottom {
+          position: relative; z-index: 2;
+          display: grid; grid-template-columns: repeat(3,1fr);
+          border-top: 1px solid var(--b);
+        }
+        .ab-hero-stat {
+          padding: 16px 24px; border-right: 1px solid var(--b);
+          opacity: 0; animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) forwards;
+        }
+        .ab-hero-stat:last-child { border-right: none; }
+        .ab-hero-stat:nth-child(1){animation-delay:1.0s}
+        .ab-hero-stat:nth-child(2){animation-delay:1.1s}
+        .ab-hero-stat:nth-child(3){animation-delay:1.2s}
+        .abs-n { font-family: var(--fd); font-size: 26px; color: var(--kente); line-height: 1; }
+        .abs-l { font-family: var(--fa); font-size: 13px; color: rgba(11,11,10,0.35); margin-top: 2px; }
+        @media(max-width:600px){ .ab-hero-bottom { grid-template-columns: 1fr 1fr; } .ab-hero-stat:nth-child(2){border-right:none} }
+
+        /* ghost watermarks */
         .ab-ghost {
           position: absolute; pointer-events: none; user-select: none; z-index: 1;
           font-family: var(--fd); white-space: nowrap;
@@ -240,6 +264,7 @@ export default function AboutPage() {
           animation: ghostDrift 24s ease-in-out infinite alternate-reverse;
         }
         @keyframes ghostDrift { from{transform:translateX(0)} to{transform:translateX(2%)} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:none} }
 
         /* ═══ 02 — ORIGIN ═══ */
         .ab-origin {
@@ -653,6 +678,44 @@ export default function AboutPage() {
           .ab-close-s { padding: 100px 0; }
           .ab-close-inner { padding: 0 22px; }
         }
+
+        /* ─── GLOBAL MOBILE ─── */
+        @media(max-width:768px){
+          .ab-hero { min-height:auto; padding-bottom:0; }
+          .ab-hero-inner { padding:32px 20px 40px; }
+          .ab-hero-h1 { font-size:clamp(48px,14vw,88px); }
+          .ab-hero-sub { font-size:16px; max-width:100%; margin-top:20px; }
+          .ab-hero-bottom { grid-template-columns:1fr 1fr; }
+          .ab-hero-stat { padding:12px 16px; }
+          .abs-n { font-size:22px; }
+
+          .ab-origin { padding:64px 0; }
+          .ab-origin-layout { grid-template-columns:1fr; gap:36px; }
+          .ab-origin-left { position:static; }
+          .ab-origin-title { font-size:clamp(36px,10vw,60px); }
+
+          .ab-philo-s { padding:64px 0; }
+          .ab-philo-grid { grid-template-columns:1fr; gap:1px; }
+          .ab-philo-card { padding:28px 20px; }
+
+          .ab-process-s { padding:64px 0; }
+          .ab-process-layout { grid-template-columns:1fr; gap:0; }
+          .ab-process-item { border-right:none !important; border-bottom:1px solid var(--b); padding:24px 20px; }
+
+          .ab-vision-s { padding:64px 0; }
+          .ab-vision-layout { grid-template-columns:1fr; gap:40px; }
+          .ab-vision-headline { font-size:clamp(40px,12vw,72px); }
+
+          .ab-founders-s { padding:64px 0; }
+          .ab-founders-grid { grid-template-columns:1fr; gap:1px; }
+          .ab-founder-card { padding:28px 20px; }
+
+          .ab-close-inner { padding:0 20px; }
+        }
+        @media(max-width:480px){
+          .ab-hero-bottom { grid-template-columns:1fr 1fr; }
+          .ab-hero-stat:nth-child(3) { border-right:none; }
+        }
       `}</style>
 
       {/* ══ KENTE TOP BAR ══ */}
@@ -666,8 +729,16 @@ export default function AboutPage() {
         <div className="ab-ghost ab-ghost-1">AURA</div>
         <div className="ab-ghost ab-ghost-2">ANKARA</div>
 
+        {/* eyebrow strip */}
+        <div className="ab-hero-eyebrow-bar">
+          <span className="ab-hero-ey-text">Ankara Aura</span>
+          <div className="ab-hero-ey-rule"/>
+          <div className="ab-hero-ey-dot"/>
+          <span className="ab-hero-ey-text" style={{color:"var(--kente)"}}>Our Story</span>
+        </div>
+
         <div className="ab-hero-inner">
-          <p className="ab-hero-eyebrow">Ankara Aura — Our Story</p>
+          <p className="ab-hero-kente-tag">Founded in Accra. Built for the world.</p>
 
           <h1 className="ab-hero-h1">
             <div className="hw">
@@ -686,9 +757,14 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="ab-hero-scroll">
-          <div className="ab-hero-scroll-line" />
-          <span>Scroll to explore</span>
+        {/* stats bar */}
+        <div className="ab-hero-bottom">
+          {[["2023","Founded"],["100%","Ankara fabric"],["Accra →","Global vision"]].map(([n,l],i)=>(
+            <div key={i} className="ab-hero-stat">
+              <div className="abs-n">{n}</div>
+              <div className="abs-l">{l}</div>
+            </div>
+          ))}
         </div>
       </section>
 
