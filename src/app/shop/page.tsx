@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { PRODUCTS } from "@/lib/products";
 import type { Product } from "@/lib/products";
+import { useCart } from "@/lib/cart-context";
 
 /* ─── Ankara SVG pattern (inline, scalable) ─── */
 function AnkaraPattern({ opacity = 0.12 }) {
@@ -20,13 +21,13 @@ function AnkaraPattern({ opacity = 0.12 }) {
       <defs>
         <pattern id="ankara-hero" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
           {/* outer diamond */}
-          <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="#c8502a" strokeWidth="1.4"/>
+          <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="#d4a843" strokeWidth="1.4"/>
           {/* inner diamond */}
           <polygon points="50,20 80,50 50,80 20,50" fill="none" stroke="#d4a843" strokeWidth="0.9"/>
           {/* tiny center */}
-          <polygon points="50,36 64,50 50,64 36,50" fill="none" stroke="#c8502a" strokeWidth="0.6"/>
+          <polygon points="50,36 64,50 50,64 36,50" fill="none" stroke="#d4a843" strokeWidth="0.6"/>
           {/* corner dots */}
-          <circle cx="3"  cy="3"  r="2.5" fill="#c8502a"/>
+          <circle cx="3"  cy="3"  r="2.5" fill="#d4a843"/>
           <circle cx="97" cy="3"  r="2.5" fill="#d4a843"/>
           <circle cx="3"  cy="97" r="2.5" fill="#1a3a5c"/>
           <circle cx="97" cy="97" r="2.5" fill="#2d6a4f"/>
@@ -34,7 +35,7 @@ function AnkaraPattern({ opacity = 0.12 }) {
           <line x1="50" y1="37" x2="50" y2="63" stroke="#d4a843" strokeWidth="0.5" strokeDasharray="2,4"/>
           <line x1="37" y1="50" x2="63" y2="50" stroke="#d4a843" strokeWidth="0.5" strokeDasharray="2,4"/>
           {/* mid edge triangles */}
-          <polygon points="50,3 56,14 44,14" fill="#c8502a" opacity="0.4"/>
+          <polygon points="50,3 56,14 44,14" fill="#d4a843" opacity="0.4"/>
           <polygon points="97,50 86,56 86,44" fill="#d4a843" opacity="0.4"/>
           <polygon points="50,97 56,86 44,86" fill="#1a3a5c" opacity="0.4"/>
           <polygon points="3,50 14,56 14,44" fill="#2d6a4f" opacity="0.4"/>
@@ -42,7 +43,7 @@ function AnkaraPattern({ opacity = 0.12 }) {
         {/* second tighter pattern for variation */}
         <pattern id="ankara-fine" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
           <polygon points="20,2 38,20 20,38 2,20" fill="none" stroke="#d4a843" strokeWidth="0.5" opacity="0.5"/>
-          <circle cx="20" cy="20" r="1.5" fill="#c8502a" opacity="0.6"/>
+          <circle cx="20" cy="20" r="1.5" fill="#d4a843" opacity="0.6"/>
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#ankara-fine)"/>
@@ -54,14 +55,14 @@ function AnkaraPattern({ opacity = 0.12 }) {
 /* ─── Placeholder product visual (colour swatch + wax texture) ─── */
 function ProductVisual({ product, size = 420 }: { product: Product; size?: number }) {
   const colors: Record<string, { bg: string; accent: string; stripe: string }> = {
-    "ankara-oversized-tee": { bg: "#1a1a1a", accent: "#c8502a", stripe: "#d4a843" },
-    "kente-blazer":          { bg: "#0d1f12", accent: "#2d6a4f", stripe: "#c8502a" },
+    "ankara-oversized-tee": { bg: "#1a1a1a", accent: "#d4a843", stripe: "#d4a843" },
+    "kente-blazer":          { bg: "#0d1f12", accent: "#2d6a4f", stripe: "#d4a843" },
     "mono-cargo-pant":       { bg: "#0b0b0a", accent: "#333",    stripe: "#555"    },
     "adinkra-hoodie":        { bg: "#1a0a0d", accent: "#8b2635", stripe: "#d4a843" },
-    "wax-print-tee":         { bg: "#0d1a2e", accent: "#1a3a5c", stripe: "#c8502a" },
-    "linen-short-set":       { bg: "#f0ebe0", accent: "#c8502a", stripe: "#d4a843" },
+    "wax-print-tee":         { bg: "#0d1a2e", accent: "#1a3a5c", stripe: "#d4a843" },
+    "linen-short-set":       { bg: "#f0ebe0", accent: "#d4a843", stripe: "#d4a843" },
   };
-  const c = colors[product.slug] || { bg: "#111", accent: "#c8502a", stripe: "#d4a843" };
+  const c = colors[product.slug] || { bg: "#111", accent: "#d4a843", stripe: "#d4a843" };
   const half = size / 2;
 
   return (
@@ -106,6 +107,7 @@ export default function ShopPage() {
   const [addedSlug,   setAddedSlug]   = useState<string | null>(null);
   const [filter,      setFilter]      = useState("All");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { addToCart } = useCart();
 
   const active = HERO_PRODUCTS[activeIdx];
 
@@ -164,7 +166,7 @@ export default function ShopPage() {
         :root {
           --ink:    #0b0b0a;
           --cream:  #f7f6f4;
-          --kente:  #c8502a;
+          --kente:  #d4a843;
           --gold:   #d4a843;
           --indigo: #1a3a5c;
           --forest: #2d6a4f;
@@ -633,7 +635,7 @@ export default function ShopPage() {
                   <defs>
                     <pattern id={`cp-${product.slug}`} width="50" height="50" patternUnits="userSpaceOnUse">
                       <polygon points="25,2 48,25 25,48 2,25" fill="none" stroke="#d4a843" strokeWidth="0.7"/>
-                      <circle cx="25" cy="25" r="2" fill="#c8502a" opacity="0.5"/>
+                      <circle cx="25" cy="25" r="2" fill="#d4a843" opacity="0.5"/>
                     </pattern>
                   </defs>
                   <rect width="100%" height="100%" fill={`url(#cp-${product.slug})`}/>
@@ -654,7 +656,7 @@ export default function ShopPage() {
                   className={`product-card-quick${addedSlug === product.slug ? " added" : ""}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    // quick-add with default size M
+                    addToCart({ slug: product.slug, name: product.name, price: product.price, size: "M", qty: 1 });
                     setAddedSlug(product.slug);
                     setTimeout(() => setAddedSlug(null), 1800);
                   }}

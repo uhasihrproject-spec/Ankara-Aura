@@ -28,7 +28,6 @@ export default function Navbar() {
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [cartOpen,   setCartOpen]   = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
-  const [collapsed,  setCollapsed]  = useState(false);
   const [cartPulse,  setCartPulse]  = useState(false);
   const [particles]  = useState(() => Array.from({ length: 20 }, (_, i) => ({
     id: i,
@@ -37,24 +36,20 @@ export default function Navbar() {
     size: 2 + Math.random() * 3,
     delay: Math.random() * 1.6,
     dur: 1 + Math.random() * 1.2,
-    color: ["#c8502a", "#d4a843", "#1a3a5c", "#8b2635", "#2d6a4f"][i % 5],
+    color: ["#d4a843", "#d4a843", "#1a3a5c", "#8b2635", "#2d6a4f"][i % 5],
     dx: (Math.random() - 0.5) * 70,
     dy: (Math.random() - 0.5) * 70,
   })));
   const [logoSpin,   setLogoSpin]   = useState(false);
   const cartPanelRef = useRef<HTMLDivElement | null>(null);
-  const lastScroll   = useRef(0);
 
   // Use shared cart context
-  const { items: cartItems, removeItem, updateQty, totalQty, totalPrice } = useCart();
+  const { items: cartItems, removeItem, updateQty, totalQty, totalPrice, wishlistCount } = useCart();
 
-  /* scroll: mark scrolled & collapsed */
+  /* scroll: mark scrolled */
   useEffect(() => {
     const onScroll = () => {
-      const y = window.scrollY;
-      setScrolled(y > 12);
-      setCollapsed(y > 80 && y > lastScroll.current);
-      lastScroll.current = y;
+      setScrolled(window.scrollY > 12);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -94,7 +89,7 @@ export default function Navbar() {
       :root {
         --ink:     #0b0b0a;
         --cream:   #f7f6f4;
-        --kente:   #c8502a;
+        --kente:   #d4a843;
         --gold:    #d4a843;
         --indigo:  #1a3a5c;
         --forest:  #2d6a4f;
@@ -121,33 +116,6 @@ export default function Navbar() {
         overflow: hidden;
       }
       .nav.scrolled { box-shadow: 0 2px 40px rgba(8,8,7,0.08); }
-      .nav.collapsed {
-        height: 8px;
-        cursor: pointer;
-      }
-      .nav.collapsed:hover {
-        height: var(--nav-h);
-      }
-
-      /* collapsed indicator stripes */
-      .nav-stripe-indicator {
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 8px;
-        background: repeating-linear-gradient(
-          90deg,
-          var(--kente)  0px, var(--kente)  18px,
-          var(--gold)   18px, var(--gold)  36px,
-          var(--ink)    36px, var(--ink)   54px,
-          var(--indigo) 54px, var(--indigo) 72px,
-          var(--forest) 72px, var(--forest) 90px
-        );
-        opacity: 0;
-        transition: opacity 0.3s;
-        pointer-events: none;
-      }
-      .nav.collapsed .nav-stripe-indicator { opacity: 1; }
-      .nav.collapsed:hover .nav-stripe-indicator { opacity: 0; }
 
       .nav-inner {
         max-width: 1200px;
@@ -313,6 +281,31 @@ export default function Navbar() {
       }
 
       /* ════════════ CART BUTTON ════════════ */
+      .wish-btn {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 18px;
+      }
+      .wish-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        min-width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: var(--kente);
+        color: #111;
+        font-size: 10px;
+        display: grid;
+        place-items: center;
+        font-family: 'Bebas Neue', sans-serif;
+      }
+
       .cart-btn {
         position: relative;
         width: 44px; height: 44px;
@@ -807,7 +800,7 @@ export default function Navbar() {
         <div className="cart-items">
           {cartItems.map((item, i) => (
             <div key={`${item.slug}-${item.size}`} className="cart-item" style={{ animationDelay: `${i * 0.06}s` }}>
-              <div className="cart-item-swatch" style={{ background: item.color || "#c8502a" }} />
+              <div className="cart-item-swatch" style={{ background: item.color || "#d4a843" }} />
               <div className="cart-item-info">
                 <div className="cart-item-name">{item.name}</div>
                 <div className="cart-item-variant">{item.size ? `Size ${item.size}` : (item.variant || "")}</div>
@@ -845,10 +838,8 @@ export default function Navbar() {
     {/* ── NAV SHELL ── */}
     <div className="nav-shell">
       <header
-        className={`nav${scrolled ? " scrolled" : ""}${collapsed ? " collapsed" : ""}`}
-        onMouseEnter={() => setCollapsed(false)}
+        className={`nav${scrolled ? " scrolled" : ""}`}
       >
-        <div className="nav-stripe-indicator" />
         <div className="nav-inner">
 
           {/* LOGO */}
@@ -881,6 +872,11 @@ export default function Navbar() {
             <span className="nav-shop-btn-wrap">
               <Link href="/shop" className="nav-shop-btn">Shop Now</Link>
             </span>
+
+            <button className="wish-btn" aria-label={`Wishlist, ${wishlistCount} items`}>
+              ♡
+              {wishlistCount > 0 && <div className="wish-badge">{wishlistCount}</div>}
+            </button>
 
             {/* CART */}
             <button
@@ -936,11 +932,11 @@ export default function Navbar() {
           <defs>
             <pattern id="ankara" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
               {/* diamond */}
-              <polygon points="40,4 76,40 40,76 4,40" fill="none" stroke="#c8502a" strokeWidth="1.2"/>
+              <polygon points="40,4 76,40 40,76 4,40" fill="none" stroke="#d4a843" strokeWidth="1.2"/>
               {/* inner diamond */}
               <polygon points="40,18 62,40 40,62 18,40" fill="none" stroke="#d4a843" strokeWidth="0.8"/>
               {/* corner dots */}
-              <circle cx="4"  cy="4"  r="2.5" fill="#c8502a"/>
+              <circle cx="4"  cy="4"  r="2.5" fill="#d4a843"/>
               <circle cx="76" cy="4"  r="2.5" fill="#d4a843"/>
               <circle cx="4"  cy="76" r="2.5" fill="#1a3a5c"/>
               <circle cx="76" cy="76" r="2.5" fill="#2d6a4f"/>

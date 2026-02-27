@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCart } from "@/lib/cart-context";
+import { getProduct } from "@/lib/products";
 import AuraButton from "@/components/ui/AuraButton";
 
 /** Animated Ankara SVG — tiles rotate & pulse via CSS */
@@ -76,6 +78,13 @@ export default function Hero() {
     return () => clearTimeout(t);
   }, []);
   const on = (d: number) => (show ? `on d${d}` : "");
+  const { addToCart } = useCart();
+  const heroProduct = getProduct("ankara-oversized-tee");
+
+  const handleHeroAdd = () => {
+    if (!heroProduct) return;
+    addToCart({ slug: heroProduct.slug, name: heroProduct.name, price: heroProduct.price, size: "M", qty: 1 });
+  };
 
   return (
     <>
@@ -268,17 +277,26 @@ export default function Hero() {
 
               <div className={`hr-strip af ${on(6)}`}>
                 <div>
-                  <p className="strip-lbl">Ankara Oversized Tee</p>
-                  <p className="strip-price">GHS 120</p>
+                  <p className="strip-lbl">{heroProduct?.name ?? "Ankara Oversized Tee"}</p>
+                  <p className="strip-price">GHS {heroProduct?.price ?? 120}</p>
                 </div>
 
-                <AuraButton
-                  href="/shop"
-                  variant="fill"
-                  style={{ padding: "11px 22px", fontSize: "10px" }}
+                <button
+                  type="button"
+                  onClick={handleHeroAdd}
+                  style={{
+                    padding: "11px 22px",
+                    fontSize: "10px",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    border: "1px solid #0b0b0a",
+                    background: "#d4a843",
+                    color: "#0b0b0a",
+                    cursor: "pointer",
+                  }}
                 >
                   Add to bag
-                </AuraButton>
+                </button>
               </div>
             </div>
           </div>

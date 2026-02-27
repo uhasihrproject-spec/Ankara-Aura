@@ -10,14 +10,14 @@ import type { Product } from "@/lib/products";
 /* ── reuse ProductVisual from shop page (or import it) ── */
 function ProductVisual({ product, size = 420 }: { product: Product; size?: number }) {
   const colors: Record<string, { bg: string; accent: string; stripe: string }> = {
-    "ankara-oversized-tee": { bg: "#1a1a1a", accent: "#c8502a", stripe: "#d4a843" },
-    "kente-blazer":          { bg: "#0d1f12", accent: "#2d6a4f", stripe: "#c8502a" },
+    "ankara-oversized-tee": { bg: "#1a1a1a", accent: "#d4a843", stripe: "#d4a843" },
+    "kente-blazer":          { bg: "#0d1f12", accent: "#2d6a4f", stripe: "#d4a843" },
     "mono-cargo-pant":       { bg: "#0b0b0a", accent: "#333",    stripe: "#555"    },
     "adinkra-hoodie":        { bg: "#1a0a0d", accent: "#8b2635", stripe: "#d4a843" },
-    "wax-print-tee":         { bg: "#0d1a2e", accent: "#1a3a5c", stripe: "#c8502a" },
-    "linen-short-set":       { bg: "#f0ebe0", accent: "#c8502a", stripe: "#d4a843" },
+    "wax-print-tee":         { bg: "#0d1a2e", accent: "#1a3a5c", stripe: "#d4a843" },
+    "linen-short-set":       { bg: "#f0ebe0", accent: "#d4a843", stripe: "#d4a843" },
   };
-  const c = colors[product.slug] || { bg: "#111", accent: "#c8502a", stripe: "#d4a843" };
+  const c = colors[product.slug] || { bg: "#111", accent: "#d4a843", stripe: "#d4a843" };
   const half = size / 2;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} xmlns="http://www.w3.org/2000/svg">
@@ -53,9 +53,9 @@ function AnkaraPattern() {
     <svg style={{ position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.07,pointerEvents:"none" }} xmlns="http://www.w3.org/2000/svg">
       <defs>
         <pattern id="ap-slug" width="80" height="80" patternUnits="userSpaceOnUse">
-          <polygon points="40,3 77,40 40,77 3,40" fill="none" stroke="#c8502a" strokeWidth="1.2"/>
+          <polygon points="40,3 77,40 40,77 3,40" fill="none" stroke="#d4a843" strokeWidth="1.2"/>
           <polygon points="40,18 62,40 40,62 18,40" fill="none" stroke="#d4a843" strokeWidth="0.7"/>
-          <circle cx="3"  cy="3"  r="2" fill="#c8502a"/><circle cx="77" cy="3"  r="2" fill="#d4a843"/>
+          <circle cx="3"  cy="3"  r="2" fill="#d4a843"/><circle cx="77" cy="3"  r="2" fill="#d4a843"/>
           <circle cx="3"  cy="77" r="2" fill="#1a3a5c"/><circle cx="77" cy="77" r="2" fill="#2d6a4f"/>
         </pattern>
       </defs>
@@ -68,7 +68,7 @@ export default function ProductPage() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug;
   const product = getProduct(slug);
-  const { addToCart, items } = useCart();
+  const { addToCart, addToWishlist, items, wishlist } = useCart();
 
   const [selectedSize,  setSelectedSize]  = useState<string | null>(null);
   const [qty,           setQty]           = useState(1);
@@ -77,8 +77,10 @@ export default function ProductPage() {
   const [sizeError,     setSizeError]     = useState(false);
   const [zoomed,        setZoomed]        = useState(false);
   const [adding,        setAdding]        = useState(false);
+  const [wishAdded,     setWishAdded]     = useState(false);
 
   const inCart = items.some(i => i.slug === slug && i.size === selectedSize);
+  const inWishlist = wishlist.some((i) => i.slug === slug);
 
   if (!product) {
     return (
@@ -100,7 +102,7 @@ export default function ProductPage() {
         price:   product.price,
         size:    selectedSize,
         qty,
-        color:   "#c8502a", // fallback
+        color:   "#d4a843", // fallback
       });
       setAdding(false);
       setAdded(true);
@@ -113,7 +115,7 @@ export default function ProductPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400&display=swap');
         :root {
-          --ink:#0b0b0a; --cream:#f7f6f4; --kente:#c8502a;
+          --ink:#0b0b0a; --cream:#f7f6f4; --kente:#d4a843;
           --gold:#d4a843; --indigo:#1a3a5c; --forest:#2d6a4f;
           --border:rgba(8,8,7,0.10);
         }
@@ -307,6 +309,7 @@ export default function ProductPage() {
           transition: border-color 0.2s, color 0.2s;
         }
         .wishlist-btn:hover { border-color: var(--ink); color: var(--ink); }
+        .wishlist-btn.saved { border-color: var(--kente); color: var(--kente); }
 
         /* desc */
         .pdp-desc {
@@ -492,7 +495,17 @@ export default function ProductPage() {
                   : "Add to Cart"}
               </span>
             </button>
-            <button className="wishlist-btn">♡ &nbsp; Save to Wishlist</button>
+            <button
+              type="button"
+              className={`wishlist-btn${inWishlist || wishAdded ? " saved" : ""}`}
+              onClick={() => {
+                addToWishlist({ slug: product.slug, name: product.name, price: product.price, image: product.images?.[0] });
+                setWishAdded(true);
+                setTimeout(() => setWishAdded(false), 1500);
+              }}
+            >
+              {inWishlist || wishAdded ? "♥ Saved to Wishlist" : "♡ Save to Wishlist"}
+            </button>
 
             <div className="pdp-divider"/>
 

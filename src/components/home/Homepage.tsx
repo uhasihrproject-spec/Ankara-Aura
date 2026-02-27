@@ -25,6 +25,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { getFeaturedProducts, COLLECTIONS } from "@/lib/products";
 import type { Product } from "@/lib/products";
+import { useCart } from "@/lib/cart-context";
 
 /* ─── INTERSECTION OBSERVER HOOK ─── */
 function useReveal(threshold = 0.1) {
@@ -228,10 +229,12 @@ function FeaturedTile({
   product,
   index,
   variant = "compact",
+  onQuickAdd,
 }: {
   product: Product;
   index: number;
   variant?: "hero" | "compact" | "wide";
+  onQuickAdd?: (product: Product) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const img1 = product.images?.[0] ?? null;
@@ -275,6 +278,17 @@ function FeaturedTile({
                 <path d="M0 3h16M13 1l3 2-3 2" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
               </svg>
             </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onQuickAdd?.(product);
+              }}
+              className="ptile-cta"
+            >
+              Add to Bag
+            </button>
           </div>
         </div>
       </div>
@@ -301,6 +315,12 @@ export default function HomePage() {
 
   const [email, setEmail]   = useState("");
   const [subbed, setSubbed] = useState(false);
+<<<<<<< HEAD
+=======
+  const [homeAddedSlug, setHomeAddedSlug] = useState<string | null>(null);
+  const { addToCart } = useCart();
+  const [subLoading, setSubLoading] = useState(false);
+>>>>>>> 93fb4a5713c555eeee468f1464b0285576d0304c
   const [testiIdx, setTestiIdx] = useState(0);
 
   const testimonials = [
@@ -346,6 +366,12 @@ export default function HomePage() {
     el.style.cursor = "grab";
   };
 
+  const handleHomeQuickAdd = (product: Product) => {
+    addToCart({ slug: product.slug, name: product.name, price: product.price, size: "M", qty: 1 });
+    setHomeAddedSlug(product.slug);
+    setTimeout(() => setHomeAddedSlug(null), 1400);
+  };
+
   return (
     <>
       <style>{`
@@ -356,7 +382,7 @@ export default function HomePage() {
         :root {
           --ink:    #0b0b0a;
           --cream:  #f7f6f4;
-          --kente:  #c8502a;
+          --kente:  #d4a843;
           --gold:   #d4a843;
           --indigo: #1a3a5c;
           --forest: #2d6a4f;
@@ -1618,124 +1644,6 @@ export default function HomePage() {
       `}</style>
 
       {/* ══════════════════════════════════════════
-          00 — HERO
-      ══════════════════════════════════════════ */}
-      <section className="hero-s">
-        {/* animated ankara pattern */}
-        <div className="hero-bg-pattern">
-          <svg xmlns="http://www.w3.org/2000/svg" style={{ position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.09 }} aria-hidden>
-            <defs>
-              <pattern id="hp" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
-                <rect x="0.5" y="0.5" width="63" height="63" fill="none" stroke="#000" strokeWidth="0.7"/>
-                <polygon points="32,2 62,32 32,62 2,32" fill="none" stroke="#000" strokeWidth="1"/>
-                <polygon points="0,0 18,0 0,18" fill="#000" opacity="0.1"/>
-                <polygon points="64,0 46,0 64,18" fill="#000" opacity="0.1"/>
-                <polygon points="0,64 18,64 0,46" fill="#000" opacity="0.1"/>
-                <polygon points="64,64 46,64 64,46" fill="#000" opacity="0.1"/>
-                <polygon points="32,18 46,32 32,46 18,32" fill="none" stroke="#c8502a" strokeWidth="0.7" opacity="0.5"/>
-                <circle cx="32" cy="32" r="2.5" fill="#c8502a" opacity="0.22"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#hp)"/>
-          </svg>
-        </div>
-
-        {/* ghost text */}
-        <div className="hero-ghost" style={{ top:"-14px", left:"-8px" }}>ANKARA</div>
-        <div className="hero-ghost" style={{ top:"160px", left:"-8px", animationDelay:"2s" }}>AURA</div>
-
-        {/* eyebrow */}
-        <div className="hero-eyebrow">
-          <span className="hero-eyebrow-text">Ankara Aura</span>
-          <div className="hero-eyebrow-rule"/>
-          <div className="hero-eyebrow-dot"/>
-          <span className="hero-eyebrow-text" style={{color:"var(--kente)"}}>SS 2025</span>
-        </div>
-
-        {/* main grid */}
-        <div className="hero-grid">
-          {/* LEFT */}
-          <div className="hero-left">
-            <div>
-              <div className="hero-headline-wrap">
-                <span className="hero-headline-fill">STREET</span>
-              </div>
-              <div className="hero-headline-wrap">
-                <span className="hero-headline-stroke">LUXURY</span>
-              </div>
-              <span className="hero-sub">where culture meets couture ✦</span>
-            </div>
-
-            <p className="hero-body">
-              Black &amp; white at the core — Ankara colour, restrained. Every piece carries the texture of tradition, crafted for the modern street.
-            </p>
-
-            <div className="hero-cta-row">
-              <Link href="/shop" style={{
-                background:"var(--ink)", color:"var(--cream)",
-                padding:"13px 28px", textDecoration:"none",
-                fontFamily:"var(--fd)", fontSize:"13px", letterSpacing:"0.2em",
-                textTransform:"uppercase", border:"1.5px solid var(--ink)",
-                transition:"background 0.2s, color 0.2s, transform 0.2s",
-                display:"inline-block",
-              }}
-              onMouseEnter={e=>{(e.target as HTMLElement).style.cssText+="background:transparent;color:var(--ink);transform:translateY(-2px)"}}
-              onMouseLeave={e=>{(e.target as HTMLElement).style.cssText+="background:var(--ink);color:var(--cream);transform:none"}}
-              >
-                Shop Now
-              </Link>
-              <Link href="/customize" style={{
-                fontFamily:"var(--fa)", fontSize:"17px",
-                color:"rgba(8,8,7,0.5)", textDecoration:"none",
-                borderBottom:"1px solid rgba(8,8,7,0.2)", paddingBottom:"2px",
-                transition:"color 0.2s, borderColor 0.2s",
-              }}>
-                Customize it →
-              </Link>
-            </div>
-          </div>
-
-          {/* RIGHT */}
-          <div className="hero-right">
-            <div className="hero-label">
-              <p className="hero-label-sub">Street Luxury</p>
-              <p className="hero-label-main">ANKARA<br/>AURA</p>
-            </div>
-            <div className="hero-model-ph">
-              <div style={{textAlign:"center"}}>
-                <div className="hero-ph-big">MODEL<br/>HERE</div>
-                <p className="hero-ph-hw">your image goes here ✦</p>
-              </div>
-            </div>
-            <div className="hero-strip">
-              <div>
-                <p className="hero-strip-name">Ankara Oversized Tee</p>
-                <p className="hero-strip-price">GH₵ 120</p>
-              </div>
-              <Link href="/shop/ankara-oversized-tee" style={{
-                background:"var(--kente)", color:"white",
-                padding:"11px 22px", textDecoration:"none",
-                fontFamily:"var(--fd)", fontSize:"11px", letterSpacing:"0.18em",
-                textTransform:"uppercase",
-              }}>
-                View Piece
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* stats */}
-        <div className="hero-stats">
-          {[["200+","Pieces crafted"],["4.9★","Avg rating"],["48h","Delivery"],["100%","Ankara DNA"]].map(([n,l],i) => (
-            <div key={i} className="hero-stat">
-              <div className="hero-stat-n">{n}</div>
-              <div className="hero-stat-l">{l}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
           01 — TAGLINE STRIP
       ══════════════════════════════════════════ */}
       <div className="strip" aria-hidden="true">
@@ -1820,7 +1728,7 @@ export default function HomePage() {
           <defs>
             <pattern id="dp" width="80" height="80" patternUnits="userSpaceOnUse">
               <polygon points="40,3 77,40 40,77 3,40" fill="none" stroke="#d4a843" strokeWidth="0.8"/>
-              <polygon points="40,20 60,40 40,60 20,40" fill="none" stroke="#c8502a" strokeWidth="0.5"/>
+              <polygon points="40,20 60,40 40,60 20,40" fill="none" stroke="#d4a843" strokeWidth="0.5"/>
               <circle cx="40" cy="40" r="2" fill="#d4a843" opacity="0.6"/>
             </pattern>
           </defs>
@@ -1834,7 +1742,7 @@ export default function HomePage() {
             <span className="drop-headline-stroke">DROP</span>
           </h2>
           <div className="drop-header-right">
-            <span className="drop-season">SS 2025 — Featured Pieces</span>
+            <span className="drop-season">{homeAddedSlug ? "Added to bag ✓" : "SS 2025 — Featured Pieces"}</span>
             <Link href="/shop" className="arrow-link arrow-link--light">
               <span>View All Pieces</span>
               <svg width="28" height="9" viewBox="0 0 28 9" fill="none" aria-hidden>
@@ -1848,18 +1756,18 @@ export default function HomePage() {
         <div className={`drop-grid${featured.length <= 2 ? " two" : ""}`}>
           {/* hero tile — tall left */}
           {featured[0] && (
-            <FeaturedTile product={featured[0]} index={0} variant="hero" />
+            <FeaturedTile product={featured[0]} index={0} variant="hero" onQuickAdd={handleHomeQuickAdd} />
           )}
           {/* right column */}
           <div className="drop-right-col">
             {featured.slice(1, 3).map((p, i) => (
-              <FeaturedTile key={p.slug} product={p} index={i + 1} variant="compact" />
+              <FeaturedTile key={p.slug} product={p} index={i + 1} variant="compact" onQuickAdd={handleHomeQuickAdd} />
             ))}
           </div>
           {/* fourth tile spans full */}
           {featured[3] && (
             <div style={{ gridColumn: featured.length <= 2 ? "auto" : "1 / -1" }}>
-              <FeaturedTile product={featured[3]} index={3} variant="wide" />
+              <FeaturedTile product={featured[3]} index={3} variant="wide" onQuickAdd={handleHomeQuickAdd} />
             </div>
           )}
         </div>
@@ -2028,7 +1936,7 @@ export default function HomePage() {
           onMouseLeave={onLookUp}
         >
           {[
-            { label: "Ankara Core",       bg: "#c8502a" },
+            { label: "Ankara Core",       bg: "#d4a843" },
             { label: "Monochrome Series", bg: "#1a1a1a" },
             { label: "Limited Drop",      bg: "#1a3a5c" },
             { label: "Signature Cuts",    bg: "#2d6a4f" },
