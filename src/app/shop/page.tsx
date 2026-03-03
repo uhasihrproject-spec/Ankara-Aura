@@ -244,7 +244,7 @@ export default function ShopPage() {
           height: 100svh;
           min-height: 600px;
           overflow: hidden;
-          background: var(--ink);
+          background: #fff;
           cursor: none;
         }
 
@@ -299,7 +299,7 @@ export default function ShopPage() {
           font-size: clamp(80px, 14vw, 180px);
           letter-spacing: 0.03em;
           color: transparent;
-          -webkit-text-stroke: 1px rgba(247,246,244,0.12);
+          -webkit-text-stroke: 1px rgba(8,8,7,0.12);
           white-space: nowrap;
           text-align: center;
           line-height: 1;
@@ -346,7 +346,7 @@ export default function ShopPage() {
           font-family: 'Bebas Neue', sans-serif;
           font-size: clamp(80px, 14vw, 180px);
           letter-spacing: 0.03em;
-          color: rgba(247,246,244,0.08);
+          color: rgba(8,8,7,0.08);
           white-space: nowrap;
           text-align: center;
           line-height: 1;
@@ -362,7 +362,7 @@ export default function ShopPage() {
           z-index: 10;
           display: flex; align-items: flex-end; justify-content: space-between;
           padding: 32px 48px 40px;
-          background: linear-gradient(to top, rgba(8,8,7,0.7) 0%, transparent 100%);
+          background: linear-gradient(to top, rgba(247,246,244,0.96) 0%, rgba(247,246,244,0.02) 100%);
         }
         .hero-info-left { display: flex; flex-direction: column; gap: 6px; }
         .hero-tag {
@@ -372,7 +372,7 @@ export default function ShopPage() {
         .hero-name {
           font-family: 'Bebas Neue', sans-serif;
           font-size: clamp(28px, 4vw, 52px);
-          letter-spacing: 0.06em; color: var(--cream); line-height: 1;
+          letter-spacing: 0.06em; color: var(--ink); line-height: 1;
         }
         .hero-price {
           font-family: 'Bebas Neue', sans-serif;
@@ -380,7 +380,7 @@ export default function ShopPage() {
           color: var(--gold); letter-spacing: 0.04em;
         }
         .hero-desc {
-          font-size: 13px; color: rgba(247,246,244,0.5);
+          font-size: 13px; color: rgba(8,8,7,0.55);
           max-width: 360px; line-height: 1.6; margin-top: 4px;
         }
         .hero-info-right { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
@@ -396,7 +396,7 @@ export default function ShopPage() {
           align-items: center;
           justify-content: center;
         }
-        .hero-cta:hover { background: transparent; color: var(--cream); transform: translateY(-1px); }
+        .hero-cta:hover { background: #fff; color: var(--ink); transform: translateY(-1px); }
         .hero-cta span { position: relative; z-index: 1; }
 
         /* ── arrows ── */
@@ -404,13 +404,13 @@ export default function ShopPage() {
           position: absolute; top: 50%; z-index: 20;
           transform: translateY(-50%);
           width: 48px; height: 48px;
-          border: 1.5px solid rgba(247,246,244,0.2);
-          border-radius: 50%; background: rgba(247,246,244,0.04);
+          border: 1.5px solid rgba(8,8,7,0.2);
+          border-radius: 50%; background: rgba(8,8,7,0.02);
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.2s;
-          color: rgba(247,246,244,0.6);
+          color: rgba(8,8,7,0.58);
         }
-        .hero-arrow:hover { border-color: var(--kente); background: var(--ink); color: var(--cream); transform: translateY(-50%) scale(1.1); }
+        .hero-arrow:hover { border-color: var(--kente); background: var(--ink); color: #fff; transform: translateY(-50%) scale(1.1); }
         .hero-arrow.left  { left: 28px; }
         .hero-arrow.right { right: 28px; }
         .hero-arrow svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -423,7 +423,7 @@ export default function ShopPage() {
         }
         .hero-dot {
           width: 6px; height: 6px; border-radius: 50%;
-          background: rgba(247,246,244,0.25);
+          background: rgba(8,8,7,0.18);
           cursor: pointer; transition: background 0.3s, transform 0.3s;
           border: none; padding: 0;
         }
@@ -434,9 +434,9 @@ export default function ShopPage() {
           position: absolute; top: 28px; right: 48px;
           font-family: 'Bebas Neue', sans-serif;
           font-size: 13px; letter-spacing: 0.12em;
-          color: rgba(247,246,244,0.3); z-index: 20;
+          color: rgba(8,8,7,0.3); z-index: 20;
         }
-        .hero-counter strong { color: rgba(247,246,244,0.7); }
+        .hero-counter strong { color: rgba(8,8,7,0.72); }
 
         /* ══════════ PRODUCTS SECTION ══════════ */
         .products-section {
