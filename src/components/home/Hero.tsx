@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCart } from "@/lib/cart-context";
+import { getProduct } from "@/lib/products";
 import AuraButton from "@/components/ui/AuraButton";
 
 /** Animated Ankara SVG — tiles rotate & pulse via CSS */
@@ -76,6 +78,13 @@ export default function Hero() {
     return () => clearTimeout(t);
   }, []);
   const on = (d: number) => (show ? `on d${d}` : "");
+  const { addToCart } = useCart();
+  const heroProduct = getProduct("ankara-oversized-tee");
+
+  const handleHeroAdd = () => {
+    if (!heroProduct) return;
+    addToCart({ slug: heroProduct.slug, name: heroProduct.name, price: heroProduct.price, size: "M", qty: 1 });
+  };
 
   return (
     <>
@@ -149,8 +158,8 @@ export default function Hero() {
         .hr-label-sub { margin:0; font-family:var(--hw); font-size:13px; opacity:0.55; }
         .hr-label-main { margin:5px 0 0; font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:0.04em; line-height:1.1; }
 
-        .hr-ph { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:2; }
-        .hr-ph-inner { display:flex; flex-direction:column; align-items:center; gap:10px; }
+        .hr-ph { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:2; padding: 44px 32px 120px; }
+        .hr-ph-inner { display:flex; flex-direction:column; align-items:center; gap:14px; padding: 22px 28px; }
         .hr-ph-big {
           font-family:'Bebas Neue',sans-serif;
           font-size:clamp(56px,8vw,100px);
@@ -198,7 +207,7 @@ export default function Hero() {
         @media (max-width: 900px) {
           .hg { grid-template-columns: 1fr; }
           .hl { border-right: none; border-bottom: 1px solid var(--rule); padding: 40px 0; }
-          .hright { min-height: 400px; }
+          .hright { min-height: 460px; }
           .hstats { grid-template-columns: repeat(2,1fr); }
           .ghost { display: none; }
         }
@@ -268,15 +277,11 @@ export default function Hero() {
 
               <div className={`hr-strip af ${on(6)}`}>
                 <div>
-                  <p className="strip-lbl">Ankara Oversized Tee</p>
-                  <p className="strip-price">GHS 120</p>
+                  <p className="strip-lbl">{heroProduct?.name ?? "Ankara Oversized Tee"}</p>
+                  <p className="strip-price">GHS {heroProduct?.price ?? 120}</p>
                 </div>
 
-                <AuraButton
-                  href="/shop"
-                  variant="fill"
-                  style={{ padding: "11px 22px", fontSize: "10px" }}
-                >
+                <AuraButton onClick={handleHeroAdd} variant="fill" style={{ background: "#0b0b0a", color: "#f7f6f4" }}>
                   Add to bag
                 </AuraButton>
               </div>

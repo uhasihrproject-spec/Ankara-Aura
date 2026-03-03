@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { PRODUCTS, getProduct } from "@/lib/products";
+import type { Product } from "@/lib/products";
 
 /* ── reuse ProductVisual from shop page (or import it) ── */
-function ProductVisual({ product, size = 420 }) {
-  const colors = {
-    "ankara-oversized-tee": { bg: "#1a1a1a", accent: "#c8502a", stripe: "#d4a843" },
-    "kente-blazer":          { bg: "#0d1f12", accent: "#2d6a4f", stripe: "#c8502a" },
+function ProductVisual({ product, size = 420 }: { product: Product; size?: number }) {
+  const colors: Record<string, { bg: string; accent: string; stripe: string }> = {
+    "ankara-oversized-tee": { bg: "#1a1a1a", accent: "#d4a843", stripe: "#d4a843" },
+    "kente-blazer":          { bg: "#0d1f12", accent: "#2d6a4f", stripe: "#d4a843" },
     "mono-cargo-pant":       { bg: "#0b0b0a", accent: "#333",    stripe: "#555"    },
     "adinkra-hoodie":        { bg: "#1a0a0d", accent: "#8b2635", stripe: "#d4a843" },
-    "wax-print-tee":         { bg: "#0d1a2e", accent: "#1a3a5c", stripe: "#c8502a" },
-    "linen-short-set":       { bg: "#f0ebe0", accent: "#c8502a", stripe: "#d4a843" },
+    "wax-print-tee":         { bg: "#0d1a2e", accent: "#1a3a5c", stripe: "#d4a843" },
+    "linen-short-set":       { bg: "#f0ebe0", accent: "#d4a843", stripe: "#d4a843" },
   };
-  const c = colors[product.slug] || { bg: "#111", accent: "#c8502a", stripe: "#d4a843" };
+  const c = colors[product.slug] || { bg: "#111", accent: "#d4a843", stripe: "#d4a843" };
   const half = size / 2;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} xmlns="http://www.w3.org/2000/svg">
@@ -51,9 +53,9 @@ function AnkaraPattern() {
     <svg style={{ position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.07,pointerEvents:"none" }} xmlns="http://www.w3.org/2000/svg">
       <defs>
         <pattern id="ap-slug" width="80" height="80" patternUnits="userSpaceOnUse">
-          <polygon points="40,3 77,40 40,77 3,40" fill="none" stroke="#c8502a" strokeWidth="1.2"/>
+          <polygon points="40,3 77,40 40,77 3,40" fill="none" stroke="#d4a843" strokeWidth="1.2"/>
           <polygon points="40,18 62,40 40,62 18,40" fill="none" stroke="#d4a843" strokeWidth="0.7"/>
-          <circle cx="3"  cy="3"  r="2" fill="#c8502a"/><circle cx="77" cy="3"  r="2" fill="#d4a843"/>
+          <circle cx="3"  cy="3"  r="2" fill="#d4a843"/><circle cx="77" cy="3"  r="2" fill="#d4a843"/>
           <circle cx="3"  cy="77" r="2" fill="#1a3a5c"/><circle cx="77" cy="77" r="2" fill="#2d6a4f"/>
         </pattern>
       </defs>
@@ -62,22 +64,23 @@ function AnkaraPattern() {
   );
 }
 
-export default function ProductPage({ params }) {
-  const slug    = params?.slug;
+export default function ProductPage() {
+  const params = useParams<{ slug: string }>();
+  const slug = params?.slug;
   const product = getProduct(slug);
-  const { addToCart, items } = useCart();
+  const { addToCart, addToWishlist, items, wishlist } = useCart();
 
-  const [selectedSize,  setSelectedSize]  = useState(null);
+  const [selectedSize,  setSelectedSize]  = useState<string | null>(null);
   const [qty,           setQty]           = useState(1);
   const [activeView,    setActiveView]    = useState(0);
   const [added,         setAdded]         = useState(false);
   const [sizeError,     setSizeError]     = useState(false);
   const [zoomed,        setZoomed]        = useState(false);
+  const [adding,        setAdding]        = useState(false);
+  const [wishAdded,     setWishAdded]     = useState(false);
 
   const inCart = items.some(i => i.slug === slug && i.size === selectedSize);
-
-  // related products
-  const related = PRODUCTS.filter(p => p.slug !== slug && p.tags.some(t => product?.tags.includes(t))).slice(0, 3);
+  const inWishlist = wishlist.some((i) => i.slug === slug);
 
   if (!product) {
     return (
@@ -87,18 +90,24 @@ export default function ProductPage({ params }) {
     );
   }
 
+  const related = PRODUCTS.filter((p) => p.slug !== slug && p.tags.some((t) => product.tags.includes(t))).slice(0, 3);
+
   const handleAddToCart = () => {
     if (!selectedSize) { setSizeError(true); setTimeout(() => setSizeError(false), 800); return; }
-    addToCart({
-      slug:    product.slug,
-      name:    product.name,
-      price:   product.price,
-      size:    selectedSize,
-      qty,
-      color:   "#c8502a", // fallback
-    });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2200);
+    setAdding(true);
+    setTimeout(() => {
+      addToCart({
+        slug:    product.slug,
+        name:    product.name,
+        price:   product.price,
+        size:    selectedSize,
+        qty,
+        color:   "#d4a843", // fallback
+      });
+      setAdding(false);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2200);
+    }, 350);
   };
 
   return (
@@ -106,7 +115,7 @@ export default function ProductPage({ params }) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400&display=swap');
         :root {
-          --ink:#0b0b0a; --cream:#f7f6f4; --kente:#c8502a;
+          --ink:#0b0b0a; --cream:#f7f6f4; --kente:#d4a843;
           --gold:#d4a843; --indigo:#1a3a5c; --forest:#2d6a4f;
           --border:rgba(8,8,7,0.10);
         }
@@ -285,6 +294,7 @@ export default function ProductPage({ params }) {
         .atc-btn:hover::before { transform: scaleX(1); }
         .atc-btn span { position: relative; z-index: 1; }
         .atc-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(200,80,42,0.25); }
+        .atc-btn:disabled { opacity: 0.8; cursor: wait; transform: none; box-shadow: none; }
         .atc-btn.added { background: var(--forest); }
         .atc-btn.added::before { display: none; }
         .atc-btn.size-error { background: #c0392b; }
@@ -299,6 +309,7 @@ export default function ProductPage({ params }) {
           transition: border-color 0.2s, color 0.2s;
         }
         .wishlist-btn:hover { border-color: var(--ink); color: var(--ink); }
+        .wishlist-btn.saved { border-color: var(--kente); color: var(--kente); }
 
         /* desc */
         .pdp-desc {
@@ -468,12 +479,15 @@ export default function ProductPage({ params }) {
 
             {/* add to cart */}
             <button
+              disabled={adding}
               className={`atc-btn${added ? " added" : ""}${sizeError ? " size-error" : ""}`}
               onClick={handleAddToCart}
             >
               <span>
                 {sizeError
                   ? "← Select a size first"
+                  : adding
+                  ? "Adding..."
                   : added
                   ? "✓ Added to Cart"
                   : inCart
@@ -481,7 +495,17 @@ export default function ProductPage({ params }) {
                   : "Add to Cart"}
               </span>
             </button>
-            <button className="wishlist-btn">♡ &nbsp; Save to Wishlist</button>
+            <button
+              type="button"
+              className={`wishlist-btn${inWishlist || wishAdded ? " saved" : ""}`}
+              onClick={() => {
+                addToWishlist({ slug: product.slug, name: product.name, price: product.price, image: product.images?.[0] });
+                setWishAdded(true);
+                setTimeout(() => setWishAdded(false), 1500);
+              }}
+            >
+              {inWishlist || wishAdded ? "♥ Saved to Wishlist" : "♡ Save to Wishlist"}
+            </button>
 
             <div className="pdp-divider"/>
 
@@ -531,7 +555,7 @@ export default function ProductPage({ params }) {
   );
 }
 
-function AccordionItem({ label, body }) {
+function AccordionItem({ label, body }: { label: string; body: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="accord-item">

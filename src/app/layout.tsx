@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
+import Providers from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "Ankara Aura",
@@ -12,9 +13,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="min-h-screen bg-white text-black">
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        <Providers>
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

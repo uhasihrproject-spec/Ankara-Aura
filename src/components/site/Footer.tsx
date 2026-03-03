@@ -1,4 +1,3 @@
-import { link } from "fs";
 import Link from "next/link";
 
 /* ── Ankara tile — same as hero for visual consistency ── */

@@ -1,12 +1,11 @@
-import { getProducts } from "@/lib/products";
+import { PRODUCTS } from "@/lib/products";
 import CollectionsClient from "@/components/home/CollectionsClient";
+import type { Product } from "@/lib/products";
 
-export default async function Collections() {
-  const products = await getProducts();
-
-  const featured = products
-    .filter((p: any) => p.featured)
-    .sort((a: any, b: any) => (a.featuredOrder ?? 9999) - (b.featuredOrder ?? 9999));
+export default function Collections() {
+  const featured = PRODUCTS
+    .filter((p: Product) => p.featured)
+    .sort((a: Product, b: Product) => (a.featuredOrder ?? 9999) - (b.featuredOrder ?? 9999));
 
   return <CollectionsClient featured={featured} />;
 }
