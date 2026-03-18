@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import BrandLogo from "@/components/site/BrandLogo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const MAIN_LINKS = [
   { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
   { href: "/shop", label: "Shop" },
   { href: "/customize", label: "Customize" },
-  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -18,7 +19,7 @@ export default function MainNavbar() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    const onScroll = () => setScrolled(window.scrollY > 10);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -31,163 +32,82 @@ export default function MainNavbar() {
     };
   }, [menuOpen]);
 
-  const isActive = (href: string) => href === "/"
-    ? pathname === "/"
-    : pathname === href || pathname.startsWith(href + "/");
+  const isActive = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
-
-        :root {
-          --ink:#0b0b0a; --cream:#f7f6f4; --gold:#d4a843; --indigo:#1a3a5c; --clay:#c8502a;
-          --border:rgba(8,8,7,0.09); --nav-h:62px;
-        }
-        .main-shell { position:sticky; top:0; z-index:200; }
-        .main-nav {
-          height:var(--nav-h); border-bottom:1px solid var(--border); background:rgba(247,246,244,.96);
-          backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
-          transition:box-shadow .3s, border-color .3s, background .3s;
-        }
-        .main-nav.sc {
-          background:rgba(247,246,244,1);
-          box-shadow:0 1px 0 rgba(8,8,7,0.08), 0 4px 32px rgba(8,8,7,0.07);
-          border-bottom-color:rgba(8,8,7,0.13);
-        }
-        .main-inner {
-          max-width:1200px; margin:0 auto; padding:0 36px; height:var(--nav-h); display:flex; align-items:center; justify-content:space-between; gap:28px;
-        }
-        .main-logo { display:flex; align-items:center; gap:11px; text-decoration:none; flex-shrink:0; }
-        .main-mark { position:relative; width:36px; height:36px; flex-shrink:0; }
-        .main-mark__inner {
-          position:absolute; inset:0; background:var(--ink); border-radius:7px; display:flex; align-items:center; justify-content:center; z-index:2;
-        }
-        .main-mark__inner::before {
-          content:''; position:absolute; inset:-1px; border-radius:8px; z-index:-1;
-          background:linear-gradient(135deg,var(--gold),var(--clay),var(--indigo),var(--gold));
-        }
-        .main-mark__text { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:.06em; color:var(--cream); }
-        .main-mark__ring {
-          position:absolute; inset:-5px; border-radius:11px; border:1.5px dashed rgba(200,80,42,.28); z-index:1;
-          transition:transform .65s cubic-bezier(.34,1.56,.64,1), border-color .3s, border-style .3s;
-        }
-        .main-mark__ring::before, .main-mark__ring::after {
-          content:''; position:absolute; width:3px; height:3px; border-radius:50%; background:var(--gold);
-        }
-        .main-mark__ring::before { top:-1.5px; left:-1.5px; }
-        .main-mark__ring::after { bottom:-1.5px; right:-1.5px; }
-        .main-logo:hover .main-mark__ring { transform:rotate(90deg); border-color:var(--gold); border-style:solid; }
-        .main-word { display:flex; flex-direction:column; }
-        .main-word strong {
-          font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:.13em; color:var(--ink); line-height:1;
-        }
-        .main-word span { font-family:'Caveat',cursive; font-size:10.5px; color:rgba(8,8,7,.36); letter-spacing:.04em; }
-        .main-links { display:flex; align-items:center; gap:32px; }
-        .main-links a, .main-menu a {
-          position:relative; color:rgba(8,8,7,.48); text-decoration:none; text-transform:uppercase; letter-spacing:.18em; font-size:10.5px;
-          padding:10px 0; transition:color .2s ease;
-        }
-        .main-links a::after, .main-menu a::after {
-          content:''; position:absolute; left:0; bottom:6px; width:100%; height:1px; background:var(--gold); transform:scaleX(0); transform-origin:left; transition:transform .22s ease;
-        }
-        .main-links a:hover, .main-menu a:hover, .main-links a.on, .main-menu a.on { color:var(--ink); }
-        .main-links a:hover::after, .main-menu a:hover::after, .main-links a.on::after, .main-menu a.on::after { transform:scaleX(1); }
-        .main-actions { display:flex; align-items:center; gap:10px; }
-        .main-note { color:rgba(8,8,7,.4); font-size:10px; letter-spacing:.15em; text-transform:uppercase; }
-        .main-cta {
-          font-size:10.5px; letter-spacing:.17em; text-transform:uppercase; background:var(--ink); color:var(--cream);
-          padding:8px 18px; text-decoration:none; border:1px solid var(--ink); transition:background .2s, color .2s, transform .18s;
-        }
-        .main-cta:hover { background:transparent; color:var(--ink); transform:translateY(-1px); }
-        .main-toggle {
-          display:none; width:40px; height:40px; border-radius:50%; border:1px solid rgba(8,8,7,.12); background:var(--cream); cursor:pointer;
-        }
-        .main-toggle span { display:block; width:16px; height:1.5px; background:var(--ink); margin:4px auto; transition:transform .22s ease, opacity .22s ease; }
-        .main-toggle.open span:nth-child(1) { transform:translateY(5.5px) rotate(45deg); }
-        .main-toggle.open span:nth-child(2) { opacity:0; }
-        .main-toggle.open span:nth-child(3) { transform:translateY(-5.5px) rotate(-45deg); }
-        .main-drawer {
-          position:fixed; inset:var(--nav-h) 16px auto; padding:22px; border-radius:26px; background:rgba(247,246,244,.98); border:1px solid rgba(8,8,7,.1);
-          box-shadow:0 24px 80px rgba(11,11,10,.12); opacity:0; pointer-events:none; transform:translateY(-12px); transition:opacity .22s ease, transform .22s ease;
-        }
-        .main-drawer.open { opacity:1; pointer-events:auto; transform:translateY(0); }
-        .main-menu { display:grid; gap:10px; margin-bottom:16px; }
-        .main-drawer p { color:rgba(8,8,7,.54); font-size:14px; line-height:1.6; margin-bottom:16px; }
+        :root { --ink:#0b0b0a; --cream:#f7f6f4; --gold:#d4a843; --clay:#c8502a; --indigo:#1a3a5c; --line:rgba(11,11,10,.1); --nav-h:72px; }
+        .aa-brand { display:inline-flex; align-items:center; gap:12px; text-decoration:none; color:inherit; }
+        .aa-brand__mark { position:relative; width:38px; height:38px; flex-shrink:0; }
+        .aa-brand__core { position:absolute; inset:0; border-radius:8px; display:grid; place-items:center; background:var(--ink); color:var(--cream); font:400 14px 'Bebas Neue',sans-serif; letter-spacing:.08em; z-index:2; }
+        .aa-brand__core::before { content:''; position:absolute; inset:-1px; border-radius:9px; z-index:-1; background:linear-gradient(135deg,var(--gold),var(--clay),var(--indigo),var(--gold)); }
+        .aa-brand__ring { position:absolute; inset:-5px; border-radius:12px; border:1.5px dashed rgba(200,80,42,.28); transition:transform .55s cubic-bezier(.34,1.56,.64,1), border-color .2s ease; }
+        .aa-brand:hover .aa-brand__ring { transform:rotate(90deg); border-color:var(--gold); }
+        .aa-brand__wordmark { display:flex; flex-direction:column; }
+        .aa-brand__wordmark strong { font:400 21px 'Bebas Neue',sans-serif; letter-spacing:.12em; line-height:1; }
+        .aa-brand__wordmark span { font:500 10px 'DM Sans',sans-serif; letter-spacing:.18em; text-transform:uppercase; color:rgba(11,11,10,.42); }
+        .aa-brand--light { color:var(--cream); }
+        .aa-brand--light .aa-brand__wordmark span { color:rgba(247,246,244,.55); }
+        .main-nav-wrap { position:sticky; top:0; z-index:150; }
+        .main-nav { min-height:var(--nav-h); border-bottom:1px solid transparent; background:rgba(247,246,244,.85); backdrop-filter:blur(18px); transition:background .25s ease, border-color .25s ease, box-shadow .25s ease; }
+        .main-nav--scrolled { background:rgba(247,246,244,.96); border-color:var(--line); box-shadow:0 14px 32px rgba(11,11,10,.06); }
+        .main-nav__inner { width:min(1220px, calc(100% - 32px)); margin:0 auto; min-height:var(--nav-h); display:flex; align-items:center; justify-content:space-between; gap:24px; }
+        .main-nav__links, .main-nav__actions { display:flex; align-items:center; gap:22px; }
+        .main-nav__links a, .main-nav__drawer a { position:relative; text-decoration:none; color:rgba(11,11,10,.54); font:500 10px 'DM Sans',sans-serif; letter-spacing:.18em; text-transform:uppercase; }
+        .main-nav__links a::after, .main-nav__drawer a::after { content:''; position:absolute; left:0; bottom:-8px; width:100%; height:1px; background:var(--gold); transform:scaleX(0); transform-origin:left; transition:transform .2s ease; }
+        .main-nav__links a:hover, .main-nav__links a.is-active, .main-nav__drawer a:hover, .main-nav__drawer a.is-active { color:var(--ink); }
+        .main-nav__links a:hover::after, .main-nav__links a.is-active::after, .main-nav__drawer a:hover::after, .main-nav__drawer a.is-active::after { transform:scaleX(1); }
+        .main-nav__label { font:500 10px 'DM Sans',sans-serif; letter-spacing:.18em; text-transform:uppercase; color:rgba(11,11,10,.35); }
+        .main-nav__cta { display:inline-flex; align-items:center; justify-content:center; min-height:40px; padding:0 18px; text-decoration:none; border:1px solid var(--ink); background:var(--ink); color:var(--cream); font:500 10px 'DM Sans',sans-serif; letter-spacing:.18em; text-transform:uppercase; transition:transform .2s ease, background .2s ease, color .2s ease; }
+        .main-nav__cta:hover { transform:translateY(-1px); background:transparent; color:var(--ink); }
+        .main-nav__toggle { display:none; width:42px; height:42px; border-radius:50%; border:1px solid var(--line); background:transparent; }
+        .main-nav__toggle span { display:block; width:18px; height:1.5px; margin:4px auto; background:var(--ink); transition:transform .2s ease, opacity .2s ease; }
+        .main-nav__toggle.is-open span:nth-child(1) { transform:translateY(5.5px) rotate(45deg); }
+        .main-nav__toggle.is-open span:nth-child(2) { opacity:0; }
+        .main-nav__toggle.is-open span:nth-child(3) { transform:translateY(-5.5px) rotate(-45deg); }
+        .main-nav__drawer { position:fixed; inset:calc(var(--nav-h) + 12px) 16px auto; padding:22px; border:1px solid var(--line); background:rgba(247,246,244,.98); box-shadow:0 30px 70px rgba(11,11,10,.14); opacity:0; pointer-events:none; transform:translateY(-10px); transition:opacity .22s ease, transform .22s ease; }
+        .main-nav__drawer.is-open { opacity:1; pointer-events:auto; transform:translateY(0); }
+        .main-nav__drawer nav { display:grid; gap:14px; }
+        .main-nav__drawer p { margin:16px 0; color:rgba(11,11,10,.56); line-height:1.6; font-size:14px; }
         @media (max-width: 980px) {
-          .main-links, .main-actions { display:none; }
-          .main-toggle { display:inline-block; }
-          .main-inner { padding:0 20px; }
+          .main-nav__links, .main-nav__actions { display:none; }
+          .main-nav__toggle { display:inline-block; }
         }
-        @media (min-width: 981px) {
-          .main-drawer { display:none; }
-        }
+        @media (min-width: 981px) { .main-nav__drawer { display:none; } }
       `}</style>
-
-      <header className="main-shell">
-        <div className={`main-nav${scrolled ? " sc" : ""}`}>
-          <div className="main-inner">
-            <Link href="/" className="main-logo" aria-label="Ankara Aura home">
-              <span className="main-mark" aria-hidden>
-                <span className="main-mark__inner"><span className="main-mark__text">AA</span></span>
-                <span className="main-mark__ring" />
-              </span>
-              <span className="main-word">
-                <strong>Ankara Aura</strong>
-                <span>logo svg can drop in here later</span>
-              </span>
-            </Link>
-
-            <nav className="main-links" aria-label="Main navigation">
+      <header className="main-nav-wrap">
+        <div className={`main-nav${scrolled ? " main-nav--scrolled" : ""}`}>
+          <div className="main-nav__inner">
+            <BrandLogo subtitle="Placeholder logo mark" />
+            <nav className="main-nav__links" aria-label="Homepage navigation">
               {MAIN_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={isActive(link.href) ? "on" : undefined}
-                  onClick={() => setMenuOpen(false)}
-                >
+                <Link key={link.href} href={link.href} className={isActive(link.href) ? "is-active" : undefined}>
                   {link.label}
                 </Link>
               ))}
             </nav>
-
-            <div className="main-actions">
-              <span className="main-note">Editorial site</span>
-              <Link href="/shop" className="main-cta">Enter Shop</Link>
+            <div className="main-nav__actions">
+              <span className="main-nav__label">Clean brand experience</span>
+              <Link href="/shop" className="main-nav__cta">Enter shop</Link>
             </div>
-
-            <button
-              type="button"
-              className={`main-toggle${menuOpen ? " open" : ""}`}
-              aria-label="Toggle navigation"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((open) => !open)}
-            >
-              <span />
-              <span />
-              <span />
+            <button type="button" className={`main-nav__toggle${menuOpen ? " is-open" : ""}`} aria-label="Toggle menu" onClick={() => setMenuOpen((value) => !value)}>
+              <span /><span /><span />
             </button>
           </div>
         </div>
       </header>
-
-      <div className={`main-drawer${menuOpen ? " open" : ""}`}>
-        <nav className="main-menu" aria-label="Mobile navigation">
+      <div className={`main-nav__drawer${menuOpen ? " is-open" : ""}`}>
+        <nav>
           {MAIN_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={isActive(link.href) ? "on" : undefined}
-              onClick={() => setMenuOpen(false)}
-            >
+            <Link key={link.href} href={link.href} className={isActive(link.href) ? "is-active" : undefined} onClick={() => setMenuOpen(false)}>
               {link.label}
             </Link>
           ))}
         </nav>
-        <p>
-          The main site keeps the story clean. Step into the shop when you want the full browse, wishlist, cart, and customization flow.
-        </p>
-        <Link href="/shop" className="main-cta" onClick={() => setMenuOpen(false)}>Enter Shop</Link>
+        <p>The homepage stays minimal and premium, while the full shopping experience lives separately inside the shop.</p>
+        <Link href="/shop" className="main-nav__cta" onClick={() => setMenuOpen(false)}>Enter shop</Link>
       </div>
     </>
   );
