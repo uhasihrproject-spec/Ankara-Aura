@@ -1,7 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import Navbar from "@/components/site/Navbar";
-import Footer from "@/components/site/Footer";
+import SiteChrome from "@/components/site/SiteChrome";
 import Providers from "@/components/providers";
 
 export const metadata: Metadata = {
@@ -14,9 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen bg-white text-black">
         <Providers>
-          <Navbar />
-          <main>{children}</main>
-          <Footer />
+          <SiteChrome>{children}</SiteChrome>
         </Providers>
       </body>
     </html>

@@ -318,6 +318,7 @@ export default function ShopPage() {
   const [filter,      setFilter]      = useState("All");
   const [query,       setQuery]       = useState("");
   const [highlighted, setHighlighted] = useState<string[]>([]);
+  const [introVisible, setIntroVisible] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { addToCart } = useCart();
 
@@ -349,6 +350,11 @@ export default function ShopPage() {
 
   useEffect(() => { startAuto(); return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, [startAuto]);
 
+  useEffect(() => {
+    const introTimer = window.setTimeout(() => setIntroVisible(false), 1700);
+    return () => window.clearTimeout(introTimer);
+  }, []);
+
   const tags    = ["All", ...Array.from(new Set(PRODUCTS.flatMap(p => p.tags)))];
   const q       = query.trim().toLowerCase();
   const filtered = PRODUCTS.filter(p => {
@@ -357,7 +363,7 @@ export default function ShopPage() {
   });
 
   return (
-    <>
+    <div className={`shop-shell${introVisible ? "" : " ready"}`}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400&display=swap');
 
@@ -366,6 +372,27 @@ export default function ShopPage() {
           --forest:#2d6a4f; --indigo:#1a3a5c; --dim:rgba(11,11,10,0.1);
         }
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+        .shop-shell { background:var(--cream); }
+        .shop-shell.ready .shop-main { animation:shopMainIn .8s cubic-bezier(.22,1,.36,1) both; }
+        .shop-main { opacity:0; }
+        @keyframes shopMainIn { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+
+        .shop-intro {
+          position:fixed; inset:0; z-index:120;
+          background:radial-gradient(circle at top, rgba(212,168,67,.2), transparent 40%), var(--ink);
+          color:var(--cream); display:flex; align-items:center; justify-content:center; overflow:hidden;
+          animation:shopIntroExit .9s cubic-bezier(.77,0,.175,1) 1s forwards; pointer-events:none;
+        }
+        .shop-intro__pattern { position:absolute; inset:0; opacity:.12; }
+        .shop-intro__inner { position:relative; z-index:1; text-align:center; padding:32px; display:grid; gap:14px; }
+        .shop-intro__eyebrow { font-size:11px; letter-spacing:.42em; text-transform:uppercase; color:rgba(247,246,244,.62); }
+        .shop-intro__title { font-family:'Bebas Neue',sans-serif; font-size:clamp(72px,14vw,180px); letter-spacing:.12em; line-height:.82; }
+        .shop-intro__copy { max-width:540px; margin:0 auto; font-size:14px; line-height:1.7; color:rgba(247,246,244,.76); }
+        .shop-intro__bar { width:min(220px,60vw); height:1px; margin:8px auto 0; background:rgba(247,246,244,.2); overflow:hidden; }
+        .shop-intro__bar::after { content:""; display:block; width:100%; height:100%; background:var(--gold); transform:translateX(-100%); animation:shopLoader 1.1s cubic-bezier(.22,1,.36,1) .2s forwards; }
+        @keyframes shopLoader { to { transform:translateX(0); } }
+        @keyframes shopIntroExit { to { opacity:0; visibility:hidden; } }
 
         /* ──── HERO ──── */
         .hero {
@@ -667,6 +694,23 @@ export default function ShopPage() {
         }
       `}</style>
 
+      {introVisible && (
+        <div className="shop-intro" aria-hidden>
+          <div className="shop-intro__pattern">
+            <AnkaraPattern id="shop-intro" opacity={1} color="#d4a843"/>
+          </div>
+          <div className="shop-intro__inner">
+            <div className="shop-intro__eyebrow">Ankara Aura</div>
+            <div className="shop-intro__title">Shop</div>
+            <p className="shop-intro__copy">
+              Step into the full shopping experience with its own pace, styling tools, and a storefront built for discovery.
+            </p>
+            <div className="shop-intro__bar"/>
+          </div>
+        </div>
+      )}
+
+      <div className="shop-main">
       {/* ══════ HERO ══════ */}
       <section
         className="hero"
@@ -802,6 +846,7 @@ export default function ShopPage() {
           ))}
         </div>
       </section>
-    </>
+      </div>
+    </div>
   );
 }

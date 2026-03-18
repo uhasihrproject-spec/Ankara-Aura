@@ -17,6 +17,7 @@ type WishlistItem = {
   name: string;
   price: number;
   image?: string;
+  color?: string;
 };
 
 type CartAction =
