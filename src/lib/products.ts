@@ -122,6 +122,18 @@ export const PRODUCTS: Product[] = [
       "/products/linen-short-set-1.jpg",
     ],
   },
+  {
+    slug: "denim-jumpsuit",
+    name: "Denim Jumpsuit",
+    price: 560,
+    desc: "One-piece utility jumpsuit. Tailored fit with stretch denim. Subtle Ankara accents at cuffs.",
+    tags: ["Set", "Summer"],
+    collection: "limited-drop",
+    featured: false,
+    images: [
+      "/products/denim-jumpsuit-1.jpg",
+    ],
+  },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
