@@ -1,5 +1,10 @@
-import HomeLanding from "@/components/main/HomeLanding";
+import HomeShell from "@/components/home/HomeShell";
+import Homepage from "@/components/home/Homepage";
 
 export default function HomePage() {
-  return <HomeLanding />;
+  return (
+    <HomeShell>
+      <Homepage />
+    </HomeShell>
+  );
 }
