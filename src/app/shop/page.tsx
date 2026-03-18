@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback, type CSSProperties } from "react";
 import Link from "next/link";
-import { PRODUCTS } from "@/lib/products";
+import { useSearchParams } from "next/navigation";
+import { COLLECTIONS, PRODUCTS } from "@/lib/products";
 import type { Product } from "@/lib/products";
 import { useCart } from "@/lib/cart-context";
 
@@ -307,22 +308,30 @@ Respond ONLY in this exact JSON (no markdown, no backticks, no extra text):
 /* ─────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────── */
-const HERO_PRODUCTS = PRODUCTS.filter(p => p.featured).slice(0, 5);
+const HERO_PRODUCTS = PRODUCTS.filter((p) => p.featured).slice(0, 5);
+const COLLECTION_MENU = [{ slug: "all", name: "All Collections", tagline: "Everything currently available in the shop." }, ...COLLECTIONS];
 
 export default function ShopPage() {
-  const [activeIdx,   setActiveIdx]   = useState(0);
-  const [prevIdx,     setPrevIdx]     = useState<number | null>(null);
-  const [direction,   setDirection]   = useState(1);
-  const [animating,   setAnimating]   = useState(false);
-  const [addedSlug,   setAddedSlug]   = useState<string | null>(null);
-  const [filter,      setFilter]      = useState("All");
-  const [query,       setQuery]       = useState("");
+  const searchParams = useSearchParams();
+  const initialCollection = searchParams.get("collection");
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [prevIdx, setPrevIdx] = useState<number | null>(null);
+  const [direction, setDirection] = useState(1);
+  const [animating, setAnimating] = useState(false);
+  const [addedSlug, setAddedSlug] = useState<string | null>(null);
+  const [category, setCategory] = useState("All");
+  const [query, setQuery] = useState("");
   const [highlighted, setHighlighted] = useState<string[]>([]);
-  const [introVisible, setIntroVisible] = useState(true);
+  const [collection, setCollection] = useState(
+    initialCollection && COLLECTIONS.some((item) => item.slug === initialCollection) ? initialCollection : "all",
+  );
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { addToCart } = useCart();
 
   const active = HERO_PRODUCTS[activeIdx];
+  const activeCollection = collection === "all"
+    ? COLLECTIONS[0]
+    : COLLECTIONS.find((item) => item.slug === collection) ?? COLLECTIONS[0];
 
   const go = useCallback((nextIdx: number, dir: 1 | -1) => {
     if (animating || nextIdx === activeIdx) return;
@@ -330,7 +339,10 @@ export default function ShopPage() {
     setPrevIdx(activeIdx);
     setAnimating(true);
     setActiveIdx(nextIdx);
-    setTimeout(() => { setPrevIdx(null); setAnimating(false); }, 850);
+    setTimeout(() => {
+      setPrevIdx(null);
+      setAnimating(false);
+    }, 850);
   }, [animating, activeIdx]);
 
   const next = () => go((activeIdx + 1) % HERO_PRODUCTS.length, 1);
@@ -339,416 +351,285 @@ export default function ShopPage() {
   const startAuto = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      setActiveIdx(idx => {
+      setActiveIdx((idx) => {
         const n = (idx + 1) % HERO_PRODUCTS.length;
-        setDirection(1); setPrevIdx(idx); setAnimating(true);
-        setTimeout(() => { setPrevIdx(null); setAnimating(false); }, 850);
+        setDirection(1);
+        setPrevIdx(idx);
+        setAnimating(true);
+        setTimeout(() => {
+          setPrevIdx(null);
+          setAnimating(false);
+        }, 850);
         return n;
       });
     }, 5000);
   }, []);
 
-  useEffect(() => { startAuto(); return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, [startAuto]);
-
   useEffect(() => {
-    const introTimer = window.setTimeout(() => setIntroVisible(false), 1700);
-    return () => window.clearTimeout(introTimer);
-  }, []);
+    startAuto();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [startAuto]);
 
-  const tags    = ["All", ...Array.from(new Set(PRODUCTS.flatMap(p => p.tags)))];
-  const q       = query.trim().toLowerCase();
-  const filtered = PRODUCTS.filter(p => {
-    const tagOk = filter === "All" || p.tags.includes(filter);
-    return tagOk && (!q || `${p.name} ${p.desc} ${p.tags.join(" ")}`.toLowerCase().includes(q));
+  const categories = ["All", ...Array.from(new Set(PRODUCTS.flatMap((p) => p.tags)))];
+  const q = query.trim().toLowerCase();
+  const filtered = PRODUCTS.filter((p) => {
+    const collectionOk = collection === "all" || p.collection === collection;
+    const categoryOk = category === "All" || p.tags.includes(category);
+    return collectionOk && categoryOk && (!q || `${p.name} ${p.desc} ${p.tags.join(" ")}`.toLowerCase().includes(q));
   });
 
   return (
-    <div className={`shop-shell${introVisible ? "" : " ready"}`}>
+    <div className="shop-shell">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
 
         :root {
-          --ink:#0b0b0a; --cream:#f7f6f4; --gold:#d4a843; --kente:#c8502a;
+          --ink:#0b0b0a; --cream:#f7f6f4; --gold:#d4a843; --clay:#c8502a;
           --forest:#2d6a4f; --indigo:#1a3a5c; --dim:rgba(11,11,10,0.1);
         }
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        html { scroll-behavior:smooth; }
 
-        .shop-shell { background:var(--cream); }
-        .shop-shell.ready .shop-main { animation:shopMainIn .8s cubic-bezier(.22,1,.36,1) both; }
-        .shop-main { opacity:0; }
-        @keyframes shopMainIn { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
-
-        .shop-intro {
-          position:fixed; inset:0; z-index:120;
-          background:radial-gradient(circle at top, rgba(212,168,67,.2), transparent 40%), var(--ink);
-          color:var(--cream); display:flex; align-items:center; justify-content:center; overflow:hidden;
-          animation:shopIntroExit .9s cubic-bezier(.77,0,.175,1) 1s forwards; pointer-events:none;
+        .shop-shell {
+          background:
+            radial-gradient(circle at top left, rgba(212,168,67,.08), transparent 32%),
+            linear-gradient(180deg, #fbfaf8 0%, var(--cream) 42%, #f3efe8 100%);
+          animation:shopReveal .7s cubic-bezier(.22,1,.36,1) both;
         }
-        .shop-intro__pattern { position:absolute; inset:0; opacity:.12; }
-        .shop-intro__inner { position:relative; z-index:1; text-align:center; padding:32px; display:grid; gap:14px; }
-        .shop-intro__eyebrow { font-size:11px; letter-spacing:.42em; text-transform:uppercase; color:rgba(247,246,244,.62); }
-        .shop-intro__title { font-family:'Bebas Neue',sans-serif; font-size:clamp(72px,14vw,180px); letter-spacing:.12em; line-height:.82; }
-        .shop-intro__copy { max-width:540px; margin:0 auto; font-size:14px; line-height:1.7; color:rgba(247,246,244,.76); }
-        .shop-intro__bar { width:min(220px,60vw); height:1px; margin:8px auto 0; background:rgba(247,246,244,.2); overflow:hidden; }
-        .shop-intro__bar::after { content:""; display:block; width:100%; height:100%; background:var(--gold); transform:translateX(-100%); animation:shopLoader 1.1s cubic-bezier(.22,1,.36,1) .2s forwards; }
-        @keyframes shopLoader { to { transform:translateX(0); } }
-        @keyframes shopIntroExit { to { opacity:0; visibility:hidden; } }
+        @keyframes shopReveal { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
 
-        /* ──── HERO ──── */
         .hero {
-          position:relative; height:100svh; min-height:600px;
-          overflow:hidden; background:var(--ink); cursor:none;
+          position:relative; min-height:calc(100svh - 62px); overflow:hidden; background:var(--ink);
+          border-bottom:1px solid rgba(247,246,244,.08);
         }
-        .h-slide {
-          position:absolute; inset:0;
-          display:flex; align-items:center; justify-content:center;
+        .hero::after {
+          content:""; position:absolute; inset:0;
+          background:linear-gradient(180deg, rgba(11,11,10,.16) 0%, rgba(11,11,10,.2) 40%, rgba(11,11,10,.78) 100%);
+          pointer-events:none; z-index:1;
         }
+        .h-slide { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
         .h-slide.enter { animation:hEnter .85s cubic-bezier(.77,0,.175,1) both; }
         .h-slide.leave { animation:hLeave .85s cubic-bezier(.77,0,.175,1) both; pointer-events:none; }
-        @keyframes hEnter { from{opacity:0;transform:translateX(calc(var(--d)*56px))} to{opacity:1;transform:none} }
-        @keyframes hLeave { from{opacity:1;transform:none} to{opacity:0;transform:translateX(calc(var(--d)*-56px))} }
+        @keyframes hEnter { from { opacity:0; transform:translateX(calc(var(--d)*56px)); } to { opacity:1; transform:none; } }
+        @keyframes hLeave { from { opacity:1; transform:none; } to { opacity:0; transform:translateX(calc(var(--d)*-56px)); } }
 
-        .h-bg-txt {
-          position:absolute; inset:0; z-index:1;
-          display:flex; align-items:center; justify-content:center; pointer-events:none;
+        .h-bg-txt, .h-fg-txt {
+          position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;
         }
+        .h-bg-txt { z-index:0; }
         .h-bg-txt span {
-          font-family:'Bebas Neue',sans-serif;
-          font-size:clamp(72px,13vw,170px); letter-spacing:.03em;
-          color:transparent; -webkit-text-stroke:1px rgba(247,246,244,0.1);
-          white-space:nowrap; user-select:none;
-          animation:bgPan 9s linear infinite;
+          font-family:'Bebas Neue',sans-serif; font-size:clamp(74px,14vw,190px); letter-spacing:.08em;
+          color:transparent; -webkit-text-stroke:1px rgba(247,246,244,.1); white-space:nowrap;
         }
-        @keyframes bgPan { 0%{transform:translateX(-2%)} 50%{transform:translateX(2%)} 100%{transform:translateX(-2%)} }
-
-        .h-model {
-          position:absolute; z-index:2; bottom:0; left:50%;
-          transform:translateX(-50%); height:88%;
-          display:flex; align-items:flex-end;
-          animation:float 7s ease-in-out infinite;
-        }
-        @keyframes float { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-10px)} }
-        .h-model svg { height:100%; width:auto; max-width:580px; }
-
-        .h-fg-txt {
-          position:absolute; inset:0; z-index:3;
-          display:flex; align-items:center; justify-content:center; pointer-events:none;
-        }
+        .h-model { position:relative; z-index:2; filter:drop-shadow(0 40px 80px rgba(0,0,0,.35)); }
+        .h-fg-txt { z-index:3; align-items:flex-end; padding-bottom:20svh; }
         .h-fg-txt span {
-          font-family:'Bebas Neue',sans-serif;
-          font-size:clamp(72px,13vw,170px); letter-spacing:.03em;
-          color:rgba(247,246,244,0.07); white-space:nowrap;
-          clip-path:inset(0 0 44% 0);
+          font-family:'Bebas Neue',sans-serif; font-size:clamp(40px,7vw,88px); letter-spacing:.15em;
+          color:rgba(247,246,244,.92); text-shadow:0 18px 40px rgba(0,0,0,.28);
         }
-
-        .h-bar {
-          position:absolute; bottom:0; left:0; right:0; z-index:10;
-          padding:28px 48px 36px;
-          background:linear-gradient(to top, rgba(8,8,7,.75), transparent);
-          display:flex; align-items:flex-end; justify-content:space-between;
+        .h-content {
+          position:relative; z-index:4; max-width:1240px; margin:0 auto; padding:96px 36px 48px;
+          min-height:calc(100svh - 62px); display:flex; align-items:flex-end;
         }
-        .h-tag  { font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); margin-bottom:6px; }
-        .h-name { font-family:'Bebas Neue',sans-serif; font-size:clamp(26px,3.8vw,50px); letter-spacing:.05em; color:var(--cream); line-height:1; }
-        .h-price{ font-family:'Bebas Neue',sans-serif; font-size:clamp(20px,2.8vw,36px); color:var(--gold); letter-spacing:.04em; margin-top:2px; }
-        .h-desc { font-size:12px; color:rgba(247,246,244,.45); line-height:1.65; max-width:340px; margin-top:6px; }
-        .h-cta  {
-          font-size:10px; letter-spacing:.18em; text-transform:uppercase;
-          color:var(--cream); padding:10px 22px; border:1px solid rgba(247,246,244,.28);
-          text-decoration:none; transition:border-color .2s, background .2s;
+        .h-copy { max-width:520px; }
+        .h-eyebrow {
+          display:inline-flex; align-items:center; gap:10px; margin-bottom:18px;
+          color:rgba(247,246,244,.7); font-size:11px; letter-spacing:.28em; text-transform:uppercase;
         }
-        .h-cta:hover { background:rgba(247,246,244,.07); border-color:var(--gold); }
-
-        .h-arrow {
-          position:absolute; top:50%; z-index:20; transform:translateY(-50%);
-          width:44px; height:44px; border:1px solid rgba(247,246,244,.18); border-radius:50%;
-          background:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
-          color:rgba(247,246,244,.5); transition:all .2s;
+        .h-eyebrow::before { content:""; width:42px; height:1px; background:rgba(212,168,67,.65); }
+        .h-title {
+          font-family:'Bebas Neue',sans-serif; font-size:clamp(48px,7vw,96px); line-height:.9;
+          letter-spacing:.12em; color:var(--cream); margin-bottom:14px;
         }
-        .h-arrow:hover { border-color:var(--gold); color:var(--cream); }
-        .h-arrow.l { left:24px; } .h-arrow.r { right:24px; }
-        .h-arrow svg { width:16px; height:16px; stroke:currentColor; stroke-width:1.8; fill:none; stroke-linecap:round; stroke-linejoin:round; }
-
-        .h-dots {
-          position:absolute; bottom:116px; left:50%; transform:translateX(-50%);
-          display:flex; gap:7px; z-index:20;
+        .h-text { color:rgba(247,246,244,.78); line-height:1.8; max-width:420px; font-size:14px; }
+        .h-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:24px; }
+        .h-cta, .h-cta-sub {
+          display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 20px;
+          text-decoration:none; font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+          transition:transform .2s ease, background .2s ease, color .2s ease, border-color .2s ease;
         }
-        .h-dot {
-          width:5px; height:5px; border-radius:50%;
-          background:rgba(247,246,244,.22); border:none; padding:0; cursor:pointer;
-          transition:background .3s, transform .3s;
+        .h-cta { background:var(--gold); color:var(--ink); border:1px solid var(--gold); }
+        .h-cta-sub { border:1px solid rgba(247,246,244,.22); color:var(--cream); background:rgba(247,246,244,.04); }
+        .h-cta:hover, .h-cta-sub:hover { transform:translateY(-2px); }
+        .h-cta-sub:hover { border-color:var(--gold); color:var(--gold); }
+        .h-aside {
+          margin-left:auto; width:min(360px, 100%); position:relative; z-index:4;
+          border:1px solid rgba(247,246,244,.1); background:rgba(247,246,244,.06);
+          backdrop-filter:blur(10px); padding:24px;
         }
-        .h-dot.on { background:var(--gold); transform:scale(1.5); }
-
+        .h-tag { color:var(--gold); font-size:10px; letter-spacing:.26em; text-transform:uppercase; margin-bottom:12px; }
+        .h-name { font-family:'Bebas Neue',sans-serif; font-size:38px; letter-spacing:.08em; color:var(--cream); line-height:.92; }
+        .h-price { font-family:'Bebas Neue',sans-serif; font-size:28px; color:var(--gold); letter-spacing:.06em; margin:12px 0 10px; }
+        .h-desc { color:rgba(247,246,244,.72); font-size:14px; line-height:1.7; }
+        .h-meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+        .h-meta span {
+          border:1px solid rgba(247,246,244,.12); color:rgba(247,246,244,.78); padding:7px 10px;
+          font-size:9px; letter-spacing:.16em; text-transform:uppercase;
+        }
         .h-counter {
-          position:absolute; top:24px; right:44px; z-index:20;
-          font-family:'Bebas Neue',sans-serif; font-size:12px;
-          letter-spacing:.1em; color:rgba(247,246,244,.28);
+          position:absolute; right:40px; top:34px; z-index:4; color:rgba(247,246,244,.52);
+          font-family:'Bebas Neue',sans-serif; letter-spacing:.12em; font-size:18px;
         }
-        .h-counter strong { color:rgba(247,246,244,.65); }
+        .h-counter strong { color:var(--gold); font-weight:400; }
+        .h-arrow {
+          position:absolute; top:50%; transform:translateY(-50%); z-index:4; width:52px; height:52px;
+          border-radius:50%; border:1px solid rgba(247,246,244,.16); background:rgba(247,246,244,.04);
+          color:var(--cream); display:grid; place-items:center; cursor:pointer;
+        }
+        .h-arrow.l { left:24px; } .h-arrow.r { right:24px; }
+        .h-arrow:hover { border-color:var(--gold); color:var(--gold); }
+        .h-arrow svg { width:20px; height:20px; fill:none; stroke:currentColor; strokeWidth:1.6; }
+        .h-dots { position:absolute; left:36px; bottom:36px; z-index:4; display:flex; gap:10px; }
+        .h-dot { width:44px; height:3px; border:none; background:rgba(247,246,244,.18); cursor:pointer; }
+        .h-dot.on { background:var(--gold); }
 
-        /* ──── AURA SECTION ──── */
-        .aa-section {
-          position:relative; overflow:hidden;
-          display:grid; grid-template-columns:1fr 1fr;
-          min-height:680px;
-          background:var(--ink);
-          border-top:3px solid transparent;
-          border-image:repeating-linear-gradient(
-            90deg,#c8502a 0,#c8502a 20px,#d4a843 20px,#d4a843 40px,
-            #1a3a5c 40px,#1a3a5c 60px,#2d6a4f 60px,#2d6a4f 80px
-          ) 1;
+        .shop-story { max-width:1240px; margin:0 auto; padding:72px 36px 22px; }
+        .shop-story__grid { display:grid; grid-template-columns:1.3fr .9fr; gap:24px; align-items:start; }
+        .shop-story__panel {
+          position:relative; overflow:hidden; border:1px solid rgba(11,11,10,.1); background:rgba(255,255,255,.7); padding:34px;
         }
-        .aa-left {
-          padding:72px 64px;
-          display:flex; flex-direction:column; justify-content:center;
-          border-right:1px solid rgba(247,246,244,.07);
-          position:relative; z-index:1;
-        }
-        .aa-eyebrow {
-          font-size:9px; letter-spacing:.28em; text-transform:uppercase;
-          color:var(--gold); margin-bottom:18px;
-        }
-        .aa-heading { font-family:'Bebas Neue',sans-serif; line-height:.88; margin-bottom:26px; }
-        .aa-h1 { display:block; font-size:clamp(56px,7.5vw,108px); color:var(--cream); }
-        .aa-h2 { display:block; font-size:clamp(56px,7.5vw,108px); color:transparent; -webkit-text-stroke:2px rgba(247,246,244,.18); }
-        .aa-copy {
-          font-size:14px; color:rgba(247,246,244,.42); line-height:1.8;
-          max-width:380px; margin-bottom:34px;
-        }
-        .aa-chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:44px; }
-        .aa-chip {
-          font-size:10px; letter-spacing:.12em; text-transform:uppercase;
-          padding:8px 14px; border:1px solid rgba(247,246,244,.12);
-          background:none; color:rgba(247,246,244,.42);
-          cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s;
-        }
-        .aa-chip:hover { border-color:var(--gold); color:var(--cream); background:rgba(212,168,67,.07); }
-        .aa-kente {
-          height:3px; width:100px;
-          background:repeating-linear-gradient(90deg,#c8502a 0,#c8502a 16px,#d4a843 16px,#d4a843 32px,#1a3a5c 32px,#1a3a5c 48px);
-          background-size:48px 100%;
+        .shop-story__pattern { position:absolute; inset:0; opacity:.06; pointer-events:none; }
+        .shop-story__label { color:rgba(11,11,10,.42); font-size:11px; letter-spacing:.28em; text-transform:uppercase; margin-bottom:16px; }
+        .shop-story__title { font-family:'Bebas Neue',sans-serif; font-size:clamp(36px,5vw,62px); letter-spacing:.12em; line-height:.92; color:var(--ink); margin-bottom:16px; }
+        .shop-story__copy { color:rgba(11,11,10,.66); font-size:15px; line-height:1.8; max-width:620px; }
+        .shop-story__stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:26px; }
+        .shop-story__stat { border:1px solid rgba(11,11,10,.08); padding:16px; background:rgba(247,246,244,.82); }
+        .shop-story__stat strong { display:block; font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:.08em; color:var(--ink); }
+        .shop-story__stat span { color:rgba(11,11,10,.5); font-size:10px; letter-spacing:.18em; text-transform:uppercase; }
+        .shop-story__focus { border:1px solid rgba(11,11,10,.08); background:linear-gradient(180deg, rgba(212,168,67,.12), rgba(255,255,255,.92)); padding:28px; }
+        .shop-story__focus h3 { font-family:'Bebas Neue',sans-serif; font-size:36px; letter-spacing:.1em; color:var(--ink); }
+        .shop-story__focus p { margin-top:12px; color:rgba(11,11,10,.62); line-height:1.75; font-size:14px; }
+        .shop-story__focus button {
+          margin-top:18px; padding:0 18px; height:42px; border:1px solid var(--ink); background:var(--ink); color:var(--cream);
+          text-transform:uppercase; letter-spacing:.18em; font-size:10px; cursor:pointer;
         }
 
-        /* chat panel */
-        .aa-chat {
-          display:flex; flex-direction:column;
-          background:rgba(247,246,244,.022);
-          position:relative; z-index:1;
-          min-height:0;
+        .collections-section { max-width:1240px; margin:0 auto; padding:22px 36px 72px; }
+        .collections-head { display:flex; align-items:end; justify-content:space-between; gap:18px; margin-bottom:24px; }
+        .collections-title { font-family:'Bebas Neue',sans-serif; font-size:42px; letter-spacing:.12em; color:var(--ink); }
+        .collections-sub { color:rgba(11,11,10,.5); max-width:460px; line-height:1.7; font-size:14px; }
+        .collections-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+        .collection-card {
+          position:relative; overflow:hidden; min-height:250px; border:1px solid rgba(11,11,10,.08); background:var(--ink); color:var(--cream);
+          padding:22px; display:flex; flex-direction:column; justify-content:flex-end; text-align:left; cursor:pointer;
+          transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
         }
-        .aa-chat-hd {
-          padding:20px 28px; flex-shrink:0;
-          border-bottom:1px solid rgba(247,246,244,.07);
-          display:flex; align-items:center; gap:12px;
+        .collection-card:hover, .collection-card.active {
+          transform:translateY(-4px); border-color:rgba(212,168,67,.52); box-shadow:0 18px 50px rgba(11,11,10,.16);
         }
-        .aa-avatar {
-          width:38px; height:38px; border-radius:50%; flex-shrink:0;
-          background:linear-gradient(135deg,#d4a843,#c8502a);
-          display:flex; align-items:center; justify-content:center;
-        }
-        .aa-chat-name { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:.14em; color:#f7f6f4; line-height:1; }
-        .aa-chat-sub  { font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:rgba(212,168,67,.6); margin-top:2px; }
-        .aa-online    { margin-left:auto; display:flex; align-items:center; gap:6px; }
-        .aa-dot       { width:6px; height:6px; border-radius:50%; background:var(--forest); box-shadow:0 0 5px var(--forest); }
-        .aa-online span { font-size:9px; letter-spacing:.07em; color:rgba(247,246,244,.25); }
+        .collection-card svg { position:absolute; inset:0; opacity:.18; }
+        .collection-card__count { position:absolute; top:18px; right:18px; color:rgba(247,246,244,.44); font-size:11px; letter-spacing:.24em; text-transform:uppercase; }
+        .collection-card__name { position:relative; z-index:1; font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:.1em; line-height:.95; }
+        .collection-card__tag { position:relative; z-index:1; margin-top:10px; color:rgba(247,246,244,.78); line-height:1.6; font-size:13px; }
+        .collection-card__link { position:relative; z-index:1; margin-top:16px; color:var(--gold); font-size:10px; letter-spacing:.2em; text-transform:uppercase; }
 
-        .aa-msgs {
-          flex:1; overflow-y:auto; padding:22px 28px;
-          display:flex; flex-direction:column; gap:14px;
-          scrollbar-width:none; min-height:0;
-        }
-        .aa-msg { display:flex; flex-direction:column; gap:7px; }
-        .aa-ai   { align-items:flex-start; }
-        .aa-user { align-items:flex-end; }
+        .aa-section { margin-top:0; }
 
-        .aa-bubble {
-          padding:11px 14px; font-size:13px; line-height:1.72;
-          font-family:'DM Sans',sans-serif;
-          max-width:90%; white-space:pre-wrap;
+        .products-section { max-width:1240px; margin:0 auto; padding:72px 36px 120px; }
+        .sec-head { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-bottom:30px; }
+        .sec-title { font-family:'Bebas Neue',sans-serif; font-size:48px; letter-spacing:.1em; color:var(--ink); line-height:.9; }
+        .sec-sub { color:rgba(11,11,10,.48); font-size:14px; line-height:1.7; margin-top:10px; max-width:520px; }
+        .filter-shell {
+          width:min(760px,100%); border:1px solid rgba(11,11,10,.08); background:rgba(255,255,255,.82);
+          display:grid; grid-template-columns:1.1fr .8fr .8fr; gap:0;
         }
-        .aa-ai .aa-bubble {
-          background:rgba(247,246,244,.055);
-          border-left:2px solid rgba(212,168,67,.3);
-          color:#f7f6f4;
+        .filter-item { position:relative; border-right:1px solid rgba(11,11,10,.08); }
+        .filter-item:last-child { border-right:none; }
+        .filter-label {
+          position:absolute; left:16px; top:10px; color:rgba(11,11,10,.38); font-size:9px; letter-spacing:.18em; text-transform:uppercase;
         }
-        .aa-user .aa-bubble {
-          background:rgba(212,168,67,.1);
-          border-right:2px solid rgba(212,168,67,.25);
-          color:rgba(247,246,244,.82);
+        .search-input, .filter-select {
+          width:100%; height:72px; border:none; background:transparent; padding:28px 16px 10px; color:var(--ink);
+          font-size:12px; letter-spacing:.12em; text-transform:uppercase; outline:none; font-family:'DM Sans',sans-serif;
         }
-
-        .aa-cards { display:flex; flex-direction:column; gap:5px; width:100%; max-width:330px; }
-        .aa-card  { display:flex; align-items:stretch; border:1px solid rgba(212,168,67,.14); background:rgba(247,246,244,.03); overflow:hidden; }
-        .aa-card-link {
-          flex:1; display:flex; align-items:center; gap:10px;
-          padding:9px 11px; text-decoration:none; transition:background .17s;
+        .filter-select { appearance:none; cursor:pointer; }
+        .filter-caret { position:absolute; right:16px; top:31px; font-size:12px; color:rgba(11,11,10,.4); pointer-events:none; }
+        .curation-note {
+          display:flex; flex-wrap:wrap; gap:8px; margin-bottom:26px;
         }
-        .aa-card-link:hover { background:rgba(212,168,67,.07); }
-        .aa-card-img  { width:42px; height:42px; flex-shrink:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-        .aa-card-name { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:.06em; color:#f7f6f4; line-height:1.1; }
-        .aa-card-price{ font-size:11px; color:rgba(212,168,67,.75); margin-top:2px; font-family:'DM Sans',sans-serif; }
-        .aa-card-btn  {
-          width:42px; flex-shrink:0; border:none;
-          border-left:1px solid rgba(212,168,67,.1);
-          background:transparent; cursor:pointer;
-          display:flex; align-items:center; justify-content:center; transition:background .17s;
+        .curation-pill {
+          border:1px solid rgba(11,11,10,.08); background:rgba(255,255,255,.76); color:rgba(11,11,10,.62);
+          padding:8px 12px; font-size:10px; letter-spacing:.16em; text-transform:uppercase;
         }
-        .aa-card-btn:hover { background:rgba(212,168,67,.1); }
-        .aa-card-btn.done  { background:rgba(212,168,67,.12); }
-
-        .aa-input-row {
-          padding:14px 20px; flex-shrink:0;
-          border-top:1px solid rgba(247,246,244,.07);
-          display:flex; gap:8px; align-items:center;
-        }
-        .aa-input {
-          flex:1; background:rgba(247,246,244,.05);
-          border:1px solid rgba(212,168,67,.15);
-          color:#f7f6f4; font-size:13px; padding:11px 14px;
-          font-family:'DM Sans',sans-serif; outline:none; transition:border-color .2s;
-        }
-        .aa-input:focus { border-color:rgba(212,168,67,.5); }
-        .aa-input::placeholder { color:rgba(247,246,244,.22); }
-        .aa-send {
-          width:42px; height:42px; flex-shrink:0; border:none;
-          background:rgba(247,246,244,.06); color:rgba(247,246,244,.3);
-          cursor:not-allowed; display:flex; align-items:center; justify-content:center; transition:all .2s;
-        }
-        .aa-send.on { background:linear-gradient(135deg,#d4a843,#c8502a); color:#0b0b0a; cursor:pointer; }
-        .aa-send.on:hover { filter:brightness(1.08); }
-
-        @keyframes shopDot { 0%,80%,100%{transform:scale(.5);opacity:.3} 40%{transform:scale(1.05);opacity:1} }
-
-        /* ──── PRODUCTS ──── */
-        .products-section { padding:80px 48px 120px; max-width:1320px; margin:0 auto; }
-        .sec-head {
-          display:flex; align-items:flex-end; justify-content:space-between;
-          margin-bottom:48px; gap:24px; flex-wrap:wrap;
-        }
-        .sec-title { font-family:'Bebas Neue',sans-serif; font-size:46px; letter-spacing:.08em; color:var(--ink); line-height:1; }
-        .sec-sub   { font-family:'Caveat',cursive; font-size:15px; color:rgba(11,11,10,.4); margin-top:3px; }
-        .search-wrap  { position:relative; min-width:min(300px,100%); }
-        .search-input {
-          width:100%; border:1px solid var(--dim); background:#fff;
-          height:38px; padding:0 34px 0 12px;
-          font-size:11px; letter-spacing:.07em; text-transform:uppercase;
-          color:rgba(11,11,10,.7); outline:none;
-        }
-        .search-input:focus { border-color:var(--ink); }
-        .search-clear {
-          position:absolute; right:2px; top:2px; width:34px; height:34px;
-          border:none; background:transparent; color:rgba(11,11,10,.4); font-size:17px; cursor:pointer;
-        }
-        .pills { display:flex; gap:7px; flex-wrap:wrap; margin-top:8px; }
-        .pill  {
-          font-size:9px; letter-spacing:.18em; text-transform:uppercase;
-          padding:7px 14px; border:1px solid var(--dim);
-          background:none; cursor:pointer; color:rgba(11,11,10,.45);
-          transition:all .18s; font-family:'DM Sans',sans-serif;
-        }
-        .pill.on, .pill:hover { background:var(--ink); color:var(--cream); border-color:var(--ink); }
-
-        .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:2px; }
-
+        .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:16px; }
         .card {
-          position:relative; background:var(--ink);
-          aspect-ratio:3/4; overflow:hidden;
-          display:block; text-decoration:none;
+          position:relative; overflow:hidden; display:block; aspect-ratio:3/4; text-decoration:none; background:linear-gradient(180deg, #141414 0%, #080808 100%);
+          border:1px solid rgba(11,11,10,.08); transition:transform .28s ease, box-shadow .28s ease, border-color .28s ease;
         }
-        .card-vis {
-          position:absolute; inset:0;
-          display:flex; align-items:center; justify-content:center;
-          transition:transform .55s cubic-bezier(.4,0,.2,1);
+        .card:hover { transform:translateY(-4px); border-color:rgba(212,168,67,.35); box-shadow:0 20px 50px rgba(11,11,10,.12); }
+        .card-vis { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; transition:transform .55s cubic-bezier(.4,0,.2,1); }
+        .card:hover .card-vis { transform:scale(1.05); }
+        .card-pat { position:absolute; inset:0; opacity:.08; pointer-events:none; }
+        .card-grad { position:absolute; inset:0; background:linear-gradient(to top, rgba(8,8,7,.92) 0%, rgba(8,8,7,.12) 56%, transparent 100%); z-index:2; }
+        .card-info { position:absolute; left:0; right:0; bottom:0; padding:22px 20px; z-index:3; }
+        .card-tag { color:var(--gold); font-size:9px; letter-spacing:.24em; text-transform:uppercase; margin-bottom:6px; }
+        .card-name { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:.08em; color:var(--cream); line-height:.95; }
+        .card-price { margin-top:8px; color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:19px; }
+        .card-add {
+          position:absolute; top:14px; right:14px; z-index:4; padding:9px 14px; border:1px solid rgba(247,246,244,.32);
+          background:rgba(247,246,244,.06); color:var(--cream); opacity:0; transform:translateY(-8px);
+          transition:opacity .25s ease, transform .25s ease, background .2s ease, color .2s ease, border-color .2s ease;
+          font-size:10px; letter-spacing:.16em; text-transform:uppercase; pointer-events:none;
         }
-        .card:hover .card-vis { transform:scale(1.04); }
-        .card-pat  { position:absolute; inset:0; opacity:.07; pointer-events:none; }
-        .card-grad { position:absolute; inset:0; background:linear-gradient(to top,rgba(8,8,7,.88) 0%,rgba(8,8,7,.08) 52%,transparent 100%); z-index:2; }
-        .card-info { position:absolute; bottom:0; left:0; right:0; padding:22px 20px; z-index:3; }
-        .card-tag  { font-size:8px; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); margin-bottom:4px; }
-        .card-name { font-family:'Bebas Neue',sans-serif; font-size:21px; letter-spacing:.06em; color:var(--cream); line-height:1; margin-bottom:5px; }
-        .card-price{ font-family:'Bebas Neue',sans-serif; font-size:17px; color:var(--gold); }
-        .card-add  {
-          position:absolute; top:14px; right:14px; z-index:4;
-          background:var(--ink); color:var(--cream);
-          border:1px solid rgba(247,246,244,.35);
-          cursor:pointer; font-size:10px; letter-spacing:.16em; text-transform:uppercase;
-          font-family:'DM Sans',sans-serif; padding:8px 13px;
-          opacity:0; transform:translateY(-6px);
-          transition:opacity .25s, transform .25s, background .18s;
-          pointer-events:none;
-        }
-        .card:hover .card-add { opacity:1; transform:translateY(0); pointer-events:all; }
-        .card-add.done { background:var(--gold); color:var(--ink); border-color:var(--gold); opacity:1; transform:translateY(0); pointer-events:all; }
+        .card:hover .card-add { opacity:1; transform:translateY(0); pointer-events:auto; }
+        .card-add.done { opacity:1; transform:translateY(0); background:var(--gold); color:var(--ink); border-color:var(--gold); pointer-events:auto; }
+        .card.glow { border-color:rgba(212,168,67,.7); box-shadow:0 0 0 1px rgba(212,168,67,.42), 0 20px 55px rgba(212,168,67,.12); }
+        .empty-state { padding:28px 0; color:rgba(11,11,10,.46); font-size:11px; letter-spacing:.18em; text-transform:uppercase; }
 
-        .card.glow { outline:2px solid rgba(212,168,67,.8); animation:cardGlow 2.5s ease-in-out infinite; }
-        @keyframes cardGlow { 0%,100%{box-shadow:0 0 0 0 rgba(212,168,67,0)} 50%{box-shadow:0 0 22px 5px rgba(212,168,67,.22)} }
-
-        @media(max-width:920px) {
-          .aa-section { grid-template-columns:1fr; }
-          .aa-left { padding:52px 28px; border-right:none; border-bottom:1px solid rgba(247,246,244,.07); }
-          .aa-chat { min-height:480px; }
-          .h-bar { padding:20px 20px 28px; }
+        @media (max-width: 1080px) {
+          .shop-story__grid, .collections-grid { grid-template-columns:1fr 1fr; }
+          .h-content { flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:24px; }
+          .h-aside { margin-left:0; }
+          .filter-shell { grid-template-columns:1fr; }
+          .filter-item { border-right:none; border-bottom:1px solid rgba(11,11,10,.08); }
+          .filter-item:last-child { border-bottom:none; }
+        }
+        @media (max-width: 720px) {
+          .hero { min-height:760px; }
+          .h-content { padding:88px 20px 30px; min-height:760px; }
           .h-arrow { display:none; }
-          .products-section { padding:52px 20px 80px; }
-          .sec-head { flex-direction:column; align-items:flex-start; }
+          .h-dots { left:20px; bottom:20px; }
+          .h-counter { right:20px; top:24px; }
+          .shop-story, .collections-section, .products-section { padding-left:20px; padding-right:20px; }
+          .shop-story__grid, .collections-grid, .shop-story__stats { grid-template-columns:1fr; }
+          .collections-head, .sec-head { align-items:flex-start; }
+          .grid { gap:12px; }
         }
       `}</style>
 
-      {introVisible && (
-        <div className="shop-intro" aria-hidden>
-          <div className="shop-intro__pattern">
-            <AnkaraPattern id="shop-intro" opacity={1} color="#d4a843"/>
-          </div>
-          <div className="shop-intro__inner">
-            <div className="shop-intro__eyebrow">Ankara Aura</div>
-            <div className="shop-intro__title">Shop</div>
-            <p className="shop-intro__copy">
-              Step into the full shopping experience with its own pace, styling tools, and a storefront built for discovery.
-            </p>
-            <div className="shop-intro__bar"/>
-          </div>
-        </div>
-      )}
-
-      <div className="shop-main">
-      {/* ══════ HERO ══════ */}
       <section
         className="hero"
-        onMouseEnter={() => { if (timerRef.current) clearInterval(timerRef.current); }}
+        onMouseEnter={() => {
+          if (timerRef.current) clearInterval(timerRef.current);
+        }}
         onMouseLeave={startAuto}
       >
-        <AnkaraPattern id="hero-p" opacity={0.08}/>
+        <AnkaraPattern id="hero-p" opacity={0.08} />
 
         {prevIdx !== null && (
-          <div
-            className="h-slide leave"
-            style={{ ["--d" as string]: direction } as CSSProperties}
-            key={`l-${prevIdx}`}
-          >
+          <div className="h-slide leave" style={{ ["--d" as string]: direction } as CSSProperties} key={`l-${prevIdx}`}>
             <div className="h-bg-txt"><span>{HERO_PRODUCTS[prevIdx].name.toUpperCase()}</span></div>
-            <div className="h-model"><ProductVisual product={HERO_PRODUCTS[prevIdx]} size={480}/></div>
+            <div className="h-model"><ProductVisual product={HERO_PRODUCTS[prevIdx]} size={480} /></div>
             <div className="h-fg-txt"><span>{HERO_PRODUCTS[prevIdx].name.toUpperCase()}</span></div>
           </div>
         )}
 
-        <div
-          className={`h-slide${animating ? " enter" : ""}`}
-          style={{ ["--d" as string]: direction } as CSSProperties}
-          key={`e-${activeIdx}`}
-        >
+        <div className={`h-slide${animating ? " enter" : ""}`} style={{ ["--d" as string]: direction } as CSSProperties} key={`e-${activeIdx}`}>
           <div className="h-bg-txt"><span>{active.name.toUpperCase()}</span></div>
-          <div className="h-model"><ProductVisual product={active} size={480}/></div>
+          <div className="h-model"><ProductVisual product={active} size={480} /></div>
           <div className="h-fg-txt"><span>{active.name.toUpperCase()}</span></div>
         </div>
 
         <div className="h-counter">
-          <strong>{String(activeIdx + 1).padStart(2, "0")}</strong>{" / "}{String(HERO_PRODUCTS.length).padStart(2, "0")}
+          <strong>{String(activeIdx + 1).padStart(2, "0")}</strong> / {String(HERO_PRODUCTS.length).padStart(2, "0")}
         </div>
         <button className="h-arrow l" onClick={prev} aria-label="Previous">
-          <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
+          <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6" /></svg>
         </button>
         <button className="h-arrow r" onClick={next} aria-label="Next">
-          <svg viewBox="0 0 24 24"><polyline points="9,6 15,12 9,18"/></svg>
+          <svg viewBox="0 0 24 24"><polyline points="9,6 15,12 9,18" /></svg>
         </button>
         <div className="h-dots">
           {HERO_PRODUCTS.map((_, i) => (
@@ -760,56 +641,152 @@ export default function ShopPage() {
             />
           ))}
         </div>
-        <div className="h-bar">
-          <div>
-            <div className="h-tag">{active.tags[0]}</div>
+
+        <div className="h-content">
+          <div className="h-copy">
+            <div className="h-eyebrow">The full Ankara Aura shop experience</div>
+            <h1 className="h-title">Collections, categories, and styling — all in one place.</h1>
+            <p className="h-text">
+              Explore the pieces through curated collections, filter by category, and move from discovery to cart without the main site feeling overcrowded.
+            </p>
+            <div className="h-actions">
+              <a href="#catalog" className="h-cta">Shop the catalog</a>
+              <button type="button" className="h-cta-sub" onClick={() => setCollection(active.collection ?? "all")}>Open this collection</button>
+            </div>
+          </div>
+
+          <aside className="h-aside">
+            <div className="h-tag">{active.collection?.replace(/-/g, " ") ?? active.tags[0]}</div>
             <div className="h-name">{active.name}</div>
             <div className="h-price">GH₵ {active.price.toLocaleString()}</div>
             <div className="h-desc">{active.desc}</div>
-          </div>
-          <Link href={`/shop/${active.slug}`} className="h-cta">View Piece →</Link>
+            <div className="h-meta">
+              {active.tags.map((tag) => <span key={tag}>{tag}</span>)}
+            </div>
+            <div className="h-actions">
+              <Link href={`/shop/${active.slug}`} className="h-cta">View piece</Link>
+              <button type="button" className="h-cta-sub" onClick={() => setCollection(active.collection ?? "all")}>Shop related</button>
+            </div>
+          </aside>
         </div>
       </section>
 
-      {/* ══════ AURA AI ══════ */}
-      <AuraSection onHighlight={setHighlighted}/>
+      <section className="shop-story">
+        <div className="shop-story__grid">
+          <div className="shop-story__panel">
+            <div className="shop-story__pattern"><AnkaraPattern id="shop-story" opacity={1} /></div>
+            <div className="shop-story__label">Shop overview</div>
+            <h2 className="shop-story__title">A storefront that still feels like Ankara Aura.</h2>
+            <p className="shop-story__copy">
+              The main site stays editorial and focused. Inside the shop, the browsing experience becomes more practical: collections up front, categories in a dropdown, and room to move between pieces, wishlist, cart, and customization.
+            </p>
+            <div className="shop-story__stats">
+              <div className="shop-story__stat"><strong>{COLLECTIONS.length}</strong><span>Collections to browse</span></div>
+              <div className="shop-story__stat"><strong>{categories.length - 1}</strong><span>Categories in the menu</span></div>
+              <div className="shop-story__stat"><strong>{PRODUCTS.length}</strong><span>Current pieces available</span></div>
+            </div>
+          </div>
 
-      {/* ══════ PRODUCTS ══════ */}
-      <section className="products-section">
+          <div className="shop-story__focus">
+            <div className="shop-story__label">Current focus</div>
+            <h3>{activeCollection.name}</h3>
+            <p>{activeCollection.tagline}</p>
+            <button type="button" onClick={() => document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth" })}>
+              Browse this selection
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="collections-section">
+        <div className="collections-head">
+          <div>
+            <div className="collections-title">Collections</div>
+            <p className="collections-sub">
+              Start broad with a collection, then narrow the catalog with category filters when you know the kind of piece you want.
+            </p>
+          </div>
+        </div>
+
+        <div className="collections-grid">
+          {COLLECTIONS.map((item) => {
+            const count = PRODUCTS.filter((product) => product.collection === item.slug).length;
+            return (
+              <button
+                key={item.slug}
+                type="button"
+                className={`collection-card${collection === item.slug ? " active" : ""}`}
+                onClick={() => setCollection(item.slug)}
+              >
+                <AnkaraPattern id={`collection-${item.slug}`} opacity={0.16} />
+                <span className="collection-card__count">{String(count).padStart(2, "0")} pieces</span>
+                <span className="collection-card__name">{item.name}</span>
+                <span className="collection-card__tag">{item.tagline}</span>
+                <span className="collection-card__link">Filter catalog →</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <AuraSection onHighlight={setHighlighted} />
+
+      <section className="products-section" id="catalog">
         <div className="sec-head">
           <div>
-            <div className="sec-title">All Pieces</div>
-            <div className="sec-sub">{filtered.length} pieces available</div>
+            <div className="sec-title">Shop the catalog</div>
+            <div className="sec-sub">
+              {filtered.length} piece{filtered.length === 1 ? "" : "s"} showing for {COLLECTION_MENU.find((item) => item.slug === collection)?.name ?? "All Collections"}.
+            </div>
           </div>
-          <div>
-            <div className="search-wrap">
+
+          <div className="filter-shell">
+            <div className="filter-item">
+              <div className="filter-label">Search</div>
               <input
                 className="search-input"
                 type="search"
                 placeholder="Search pieces"
                 value={query}
-                onChange={e => setQuery(e.target.value)}
+                onChange={(e) => setQuery(e.target.value)}
               />
-              {query && (
-                <button className="search-clear" onClick={() => setQuery("")} aria-label="Clear">×</button>
-              )}
             </div>
-            <div className="pills">
-              {tags.map(t => (
-                <button key={t} className={`pill${filter === t ? " on" : ""}`} onClick={() => setFilter(t)}>{t}</button>
-              ))}
+            <div className="filter-item">
+              <div className="filter-label">Collection</div>
+              <select className="filter-select" value={collection} onChange={(e) => setCollection(e.target.value)}>
+                {COLLECTION_MENU.map((item) => (
+                  <option key={item.slug} value={item.slug}>{item.name}</option>
+                ))}
+              </select>
+              <span className="filter-caret">⌄</span>
+            </div>
+            <div className="filter-item">
+              <div className="filter-label">Category</div>
+              <select className="filter-select" value={category} onChange={(e) => setCategory(e.target.value)}>
+                {categories.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+              <span className="filter-caret">⌄</span>
             </div>
           </div>
         </div>
 
-        {filtered.length === 0 && (
-          <p style={{ color:"rgba(11,11,10,.4)", fontSize:11, letterSpacing:".1em", textTransform:"uppercase", padding:"24px 0" }}>
-            No pieces match.
-          </p>
-        )}
+        <div className="curation-note">
+          <span className="curation-pill">{activeCollection.name}</span>
+          <span className="curation-pill">{category === "All" ? "All categories" : category}</span>
+          {query && <span className="curation-pill">Search: {query}</span>}
+          {collection !== "all" && (
+            <button type="button" className="curation-pill" onClick={() => setCollection("all")}>
+              Clear collection
+            </button>
+          )}
+        </div>
+
+        {filtered.length === 0 && <p className="empty-state">No pieces match this selection yet.</p>}
 
         <div className="grid">
-          {filtered.map(product => (
+          {filtered.map((product) => (
             <Link
               key={product.slug}
               href={`/shop/${product.slug}`}
@@ -824,18 +801,18 @@ export default function ShopPage() {
                 </defs>
                 <rect width="100%" height="100%" fill={`url(#cp-${product.slug})`}/>
               </svg>
-              <div className="card-vis"><ProductVisual product={product} size={270}/></div>
-              <div className="card-grad"/>
+              <div className="card-vis"><ProductVisual product={product} size={270} /></div>
+              <div className="card-grad" />
               <div className="card-info">
-                <div className="card-tag">{product.tags[0]}</div>
+                <div className="card-tag">{product.collection?.replace(/-/g, " ") ?? product.tags[0]}</div>
                 <div className="card-name">{product.name}</div>
                 <div className="card-price">GH₵ {product.price.toLocaleString()}</div>
               </div>
               <div
                 className={`card-add${addedSlug === product.slug ? " done" : ""}`}
-                onClick={e => {
+                onClick={(e) => {
                   e.preventDefault();
-                  addToCart({ slug:product.slug, name:product.name, price:product.price, size:"M", qty:1 });
+                  addToCart({ slug: product.slug, name: product.name, price: product.price, size: "M", qty: 1 });
                   setAddedSlug(product.slug);
                   setTimeout(() => setAddedSlug(null), 1800);
                 }}
@@ -846,7 +823,6 @@ export default function ShopPage() {
           ))}
         </div>
       </section>
-      </div>
     </div>
   );
 }
