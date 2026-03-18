@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
+import type { CartItem } from "@/lib/cart-context";
 
 /* ── Ankara SVG stripe ── */
 function KenteStripe() {
@@ -38,7 +39,7 @@ function Steps({ current }: { current: number }) {
 }
 
 /* ── Order summary item ── */
-function OrderItem({ item }: { item: any }) {
+function OrderItem({ item }: { item: CartItem }) {
   const colors: Record<string, string> = {
     "ankara-oversized-tee": "#c8502a",
     "kente-blazer":          "#2d6a4f",
@@ -191,10 +192,10 @@ export default function CheckoutPage() {
                 </svg>
               </div>
               <p className="co-conf-tag">Order Placed</p>
-              <h1 className="co-conf-title">You're in the Aura.</h1>
+              <h1 className="co-conf-title">You&apos;re in the Aura.</h1>
               <div className="co-conf-num">{orderNum}</div>
               <p className="co-conf-body">
-                Your pieces are being prepared. We'll send a confirmation to{" "}
+                Your pieces are being prepared. We&apos;ll send a confirmation to{" "}
                 <strong>{shipping.email || "your email"}</strong>.<br/>
                 Estimated delivery: <strong>{shipping.method === "overnight" ? "Next day" : shipping.method === "express" ? "2–3 days" : "5–7 days"}</strong>.
               </p>
@@ -397,7 +398,7 @@ export default function CheckoutPage() {
                       ))}
                     </div>
                     <Field label="Mobile Money number" name="momo" type="tel" value={payment.momo} onChange={py("momo")} placeholder="+233 24 000 0000"/>
-                    <p className="co-momo-note">You'll receive a prompt on your phone to confirm payment.</p>
+                    <p className="co-momo-note">You&apos;ll receive a prompt on your phone to confirm payment.</p>
                   </div>
                 )}
 

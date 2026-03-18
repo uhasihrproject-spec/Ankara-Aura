@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useReducer, useEffect, useState } from "react";
 
-type CartItem = {
+export type CartItem = {
   slug: string;
   name: string;
   price: number;
@@ -17,6 +17,7 @@ type WishlistItem = {
   name: string;
   price: number;
   image?: string;
+  color?: string;
 };
 
 type CartAction =
